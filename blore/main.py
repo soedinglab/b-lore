@@ -259,6 +259,9 @@ if (opts.meta):
 
 
     if opts.params is not None:
+        if opts.params[0] == 0.0:
+            print("Input warning: pi cannot be equal to 0. Setting it to 0.000001")
+            opts.params[0] = 0.000001
         mparams = hyperparameters.reverse(np.array(opts.params))
     else:
         mparams = None

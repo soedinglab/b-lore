@@ -18,4 +18,4 @@ $BLORE --meta --statinfo ${POP1_OUT}/pop1reg_summary ${POP2_OUT}/pop2reg_summary
               --prefix bvslr \
               --zmax 2 \
               --muvar \
-              --params 0.0005 0 0.001 0.001
+              --params 0.01 0 0.01 0.01
