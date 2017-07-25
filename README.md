@@ -17,6 +17,21 @@ Several genetic regions, or loci are preselected for analysis with B-LORE.
 4. Models data with logistic regression, and is suited for case/control studies.
 5. Combines information over all SNPs in a locus with multiple regression.
 
+## Installation
+B-LORE is written in python and C++. To run B-LORE, you will need
+- python version 3.4 or higher,
+- the Python packages for scientific computing NumPy and SciPy.
+- C++ compiler
+
+To use B-LORE, you have to download the repository and compile the C++ shared libraries:
+```
+git clone https://github.com/soedinglab/b-lore.git
+cd b-lore
+make
+```
+The `Makefile` uses `g++` by default, which you can change depending on the compiler available on your system.
+
+
 ## Input files
 For calculating summary statistics, it uses the following file formats as input:
 1. Genotype files in [Oxford format](http://www.stats.ox.ac.uk/~marchini/software/gwas/file_format.html), for all loci of interest.
@@ -41,3 +56,6 @@ The first 3 columns are:
 - `tar -zxvf input.tar.gz`
 This will create an example input folder, with genotypes at 20 loci for 3 populations, a sample file for each population and ENCODE data for the 20 loci.
 - `./commands.sh` to run B-LORE on the 3 populations to generate summary statistics, followed by a meta-analysis.
+
+## License
+B-LORE is released under the GNU General Public License version 3. See LICENSE for more details. Copyright Johannes Soeding and Saikat Banerjee.
