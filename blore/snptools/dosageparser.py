@@ -151,7 +151,7 @@ class DosageParser:
 
     @staticmethod
     def read_single_locus_dosage(filename, nsample):
-        print("Reading genotype from {:s}\n".format(os.path.basename(filename)))
+        print("Reading genotype from {:s}".format(os.path.basename(filename)))
         ncol = nsample * 3 + 5
         dosage = np.loadtxt(filename, usecols=range(5, ncol)).T
         return dosage

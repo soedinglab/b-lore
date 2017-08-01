@@ -7,7 +7,7 @@ class LogisticRegression:
     _jac_calculated = False
 
 
-    def __init__(self, genotype, phenotype, mureg, sigmareg, framingham, covariates=None):
+    def __init__(self, genotype, phenotype, mureg, sigmareg, covariates=None):
         # list of genotype arrays each with shape (N,I)
         self._genotype = genotype
         # array of phenotypes shape(N,)
@@ -20,8 +20,6 @@ class LogisticRegression:
         self._covariates = covariates
         # Array for # of snps in each loci
         self._nsnps = np.array([x.shape[1] for x in genotype])
-        # Array of Framingham risk scores
-        self._framingham = np.array(framingham)
 
 
     @property
@@ -76,12 +74,11 @@ class LogisticRegression:
         gtmod = np.concatenate((gtcov, ones), axis=1)
 
         phenotype = self._phenotype
-        framingham = self._framingham
         nsnps_tot = np.sum(self._nsnps)
         sigreg    = self._sigmareg
         np.random.seed(0)
         vinit     = np.random.uniform(-0.001, 0.001, nsnps_tot + ncov_tot + 1)
-        args      = gtmod, phenotype, framingham, sigreg
+        args      = gtmod, phenotype, sigreg
 
         gmode = optimize.minimize(self._log_likelihood,
                                   vinit,
@@ -92,8 +89,9 @@ class LogisticRegression:
                                   options={'maxiter': 20000000,
                                            'maxfun': 20000000,
                                            'ftol': 1e-9,
-                                           'gtol': 1e-9,
-                                           'disp': True})
+                                           'gtol': 1e-9
+                                           #'disp': True
+                                          })
         vmin_all = gmode.x
         vmin_snps = vmin_all[0:nsnps_tot]
         vmin_cov = vmin_all[nsnps_tot:nsnps_tot + ncov_tot]
@@ -116,15 +114,14 @@ class LogisticRegression:
 
 
     @staticmethod
-    def _log_likelihood(v, x, p, framingham, sigma_reg):
+    def _log_likelihood(v, x, p, sigma_reg):
 
         dim = len(v)
-        vx = np.einsum('i,ji->j', v, x) + framingham
+        vx = np.einsum('i,ji->j', v, x)
         fact = 1 / sigma_reg / sigma_reg
 
         # Function
         llv = np.sum(np.einsum('i,i->i', p, vx) - np.log(1 + np.exp(vx)))
-        #llv = np.sum((p * vx) - np.log(1 + np.exp(vx)))
         reg = 0.5 * dim * np.log(fact) - 0.5 * fact * np.dot(v, v)
         loglik = llv + reg
 
@@ -136,7 +133,7 @@ class LogisticRegression:
 
 
     def _transform(self, x):
-        vx = np.einsum('i,ji->j', self.coeff, x) + self._framingham
+        vx = np.einsum('i,ji->j', self.coeff, x)
         pred = 1 / (1 + np.exp(-vx))
         return pred
 

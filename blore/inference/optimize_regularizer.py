@@ -9,10 +9,9 @@ from inference.empirical_bayes import EmpiricalBayes
 class OptimizeRegularizer:
 
 
-    def __init__(self, genotype, phenotype, framingham, mu = 0.0, sigma = 0.01, tol = 0.0001, covariates = None):
+    def __init__(self, genotype, phenotype, mu = 0.0, sigma = 0.01, tol = 0.0001, covariates = None):
         self._genotype = genotype
         self._phenotype = phenotype
-        self._framingham = framingham
         self._mureg = mu
         self._sigmareg = sigma
         self._tolerance = tol
@@ -39,7 +38,7 @@ class OptimizeRegularizer:
         while iterate:
 
             # Run the logistic regression with old regulariser
-            logreg = LogisticRegression(self._genotype, self._phenotype, mureg_old, sigmareg_old, framingham = self._framingham, covariates=self._covariates)
+            logreg = LogisticRegression(self._genotype, self._phenotype, mureg_old, sigmareg_old, covariates=self._covariates)
             logreg.fit()
             v0 = logreg.v0
             vmin = logreg.vmin
@@ -48,10 +47,9 @@ class OptimizeRegularizer:
 
             # Run the empirical Bayes with old regulariser and z = 1 [note ||z|| = nsnps]
             sigreg2_old = sigmareg_old * sigmareg_old
-            k = 1
-            kc = int(np.sum(iscov))
             features = [np.ones((1, len(x))) for x in vmin]
-            emp_bayes = EmpiricalBayes(vmin, precll, features, iscov, mureg_old, sigreg2_old, self._cmax, False, regoptim = True)
+            muvar = False
+            emp_bayes  = EmpiricalBayes(vmin, precll, features, iscov, mureg_old, sigreg2_old, self._cmax, muvar, regoptim = True)
             emp_bayes.fit()
             params = emp_bayes.params
             mu = params[1]
@@ -64,8 +62,10 @@ class OptimizeRegularizer:
             # Check for convergence
             mureg_diff = mureg_new - mureg_old
             sigmareg_diff = sigmareg_new - sigmareg_old
-            print ("New sigmareg = %g, old sigmareg = %g" % (sigmareg_new, sigmareg_old))
-            print ("**** Sigmareg difference is %g" % sigmareg_diff)
+            #print ("New sigmareg = %g, old sigmareg = %g" % (sigmareg_new, sigmareg_old))
+            #print ("**** Sigmareg difference is %g" % sigmareg_diff)
+            #print ("New mureg = %g, old mureg = %g" % (mureg_new, mureg_old))
+            #print ("**** Mureg difference is %g" % mureg_diff)
             if abs(mureg_diff) < tol and abs(sigmareg_diff) < tol :
                 iterate = False
             mureg_old = mureg_new

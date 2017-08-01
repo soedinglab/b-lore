@@ -102,7 +102,7 @@ class EmpiricalBayes:
                                             })
 
         self._params = lml_min.x
-        print (lml_min)
+        #print (lml_min)
 
 
     def fix_zstates(self, zstates):
@@ -156,8 +156,12 @@ class EmpiricalBayes:
             blambda = 0.75
             logprior_pi = - blambda * np.sum(np.abs(params[1:nfeat]))
             derprior_pi = - blambda * np.sign(params[1:nfeat])
-            logprior_mu = - np.abs(params[nfeat])
-            derprior_mu = - np.sign(params[nfeat])
+            #logprior_mu = - np.abs(params[nfeat])
+            #derprior_mu = - np.sign(params[nfeat])
+            musigma = 0.01
+            mulambda = 1 / musigma / musigma
+            logprior_mu = 0.5 * np.log(mulambda) - 0.5 * mulambda * params[nfeat] * params[nfeat] # Gaussian prior
+            derprior_mu = - mulambda * params[nfeat]
 
             mll += logprior_pi
             mll += logprior_mu

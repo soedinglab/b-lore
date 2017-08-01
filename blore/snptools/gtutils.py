@@ -97,6 +97,7 @@ class Editor:
         if self._standardize_once:
             return
         self._standardize_once = True
+        print ("Normalizing the genotype")
 
         self._snpfreq = list()
         for i in range(self._nloci):

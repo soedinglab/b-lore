@@ -41,7 +41,6 @@ def parse_args():
             --regoptim
             --out
             --prefix
-            --age
             --reg
             --pca
         Options available when using --meta are as follows:
@@ -115,11 +114,6 @@ def parse_args():
                         action='store_true',
                         help='optimize the regularizer')
 
-    parser.add_argument('--age',
-                        dest='add_fram',
-                        action='store_true',
-                        help='use framingham risk')
-
     parser.add_argument('--reg',
                         default=0.1,
                         type=float,
@@ -133,6 +127,15 @@ def parse_args():
                         dest='npca',
                         metavar='INT',
                         help='Number of Principal Components to be calculated')
+
+
+    parser.add_argument('--cov',
+                        nargs='*',
+                        type=str,
+                        dest='covariates',
+                        metavar='STR',
+                        help='names of covariates to use from the sample file')
+
 
     parser.add_argument('--zmax',
                         default=2,
@@ -196,12 +199,12 @@ if (opts.summary):
     genotypefiles = opts.genotypefiles
     samplefile = opts.samplefile
     phenotype = opts.pheno
+    covnames = opts.covariates
     sigreg = opts.sigreg
     mureg = 0.0
     tolerance = 0.0001
     npca = opts.npca
     regoptim = opts.regoptim
-    add_fram = opts.add_fram
 
     # check for at least 1 genotypefile
     try:
@@ -235,7 +238,7 @@ if (opts.summary):
         studyname = os.path.split(outdir)[1]
         file_prefix = '%s_summary' % studyname
 
-    individual.summary(samplefile, genotypefiles, phenotype, mureg, sigreg, tolerance, npca, outdir, file_prefix, regoptim, add_fram)
+    individual.summary(samplefile, genotypefiles, phenotype, covnames, mureg, sigreg, tolerance, npca, outdir, file_prefix, regoptim)
 
 if (opts.meta):
 

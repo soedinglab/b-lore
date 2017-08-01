@@ -28,7 +28,7 @@ def czcompgrad(pi, mu, sig2, z, v, nhyp, feat, mureg, reg2, prec, get_gradient=T
     '''
 
     _path = os.path.dirname(__file__)
-    lib = np.ctypeslib.load_library('../lib/margloglik_dev.so', _path)
+    lib = np.ctypeslib.load_library('../lib/margloglik.so', _path)
     ccomps = lib.margloglik_zcomps
     ccomps.restype = ctypes.c_double
     ccomps.argtypes = [ctypes.c_int,                                                                   # nvar, number of SNPs
