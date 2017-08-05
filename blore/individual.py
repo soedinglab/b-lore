@@ -20,7 +20,8 @@ def parse_dosage_data(samplefile, genotypefiles, phenotypename):
 
 def pcacomp(data, n):
     from sklearn.decomposition import PCA
-    pca = PCA(n_components=n, random_state = 0)
+    #pca = PCA(n_components=n, random_state = 0)
+    pca = PCA(n_components=n)
     pca.fit(data)
     comp = pca.transform(data)
     return comp

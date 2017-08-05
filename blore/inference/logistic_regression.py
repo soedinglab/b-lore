@@ -76,7 +76,7 @@ class LogisticRegression:
         phenotype = self._phenotype
         nsnps_tot = np.sum(self._nsnps)
         sigreg    = self._sigmareg
-        np.random.seed(0)
+        #np.random.seed(0)
         vinit     = np.random.uniform(-0.001, 0.001, nsnps_tot + ncov_tot + 1)
         args      = gtmod, phenotype, sigreg
 

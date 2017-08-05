@@ -115,7 +115,7 @@ def parse_args():
                         help='optimize the regularizer')
 
     parser.add_argument('--reg',
-                        default=0.1,
+                        default=0.01,
                         type=float,
                         dest='sigreg',
                         metavar='REAL',
