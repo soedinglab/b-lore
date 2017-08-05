@@ -16,6 +16,7 @@ class EmpiricalBayes:
 
     _global_zstates = []
     _update_zstates = True
+    _count_iter     = 0
 
 
     def __init__(self, vmin, precll, features, iscov, mureg, sigreg2, cmax, muvar, zcut = 0.98, params = None, regoptim = False, rerun = False):
@@ -97,8 +98,8 @@ class EmpiricalBayes:
                                     options={'maxiter': 200000,
                                              'maxfun': 2000000,
                                              'ftol': 1e-9,
-                                             'gtol': 1e-9
-                                             #'disp': True
+                                             'gtol': 1e-9,
+                                             'disp': True
                                             })
 
         self._params = lml_min.x
@@ -172,7 +173,7 @@ class EmpiricalBayes:
 
 
     def _callback_zstates(self, params):
-        if self._update_zstates:
+        if self._update_zstates and self._count_iter % 10 == 0:
             a = [hyperparameters.transform(params, self._features[i], self._iscov[i]) for i in range(self._nloci)]
             self._global_zstates = [zstatespy.create(self._nsnps[i],
                                                      self._cmax,
@@ -184,6 +185,7 @@ class EmpiricalBayes:
                                                      self._precll[i],
                                                      self._iscov[i]) \
                                     for i in range(self._nloci)]
+        self._count_iter += 1
 
 
     @staticmethod

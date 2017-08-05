@@ -3,6 +3,48 @@ import os
 import ctypes
 from inference import quasi_laplace
 
+#def prune(newz, prob, oldprobsum, target):
+def prune(oldz, newz, target, pi, mu, sig2, vmin, mureg, sigreg2, precll):
+
+    ''' Probability is for the new newz. 
+        sum(prob) = 1 - oldprobsum    
+    '''
+
+    #znorm = len(newz[0])
+    #print ("Pruning z-states of znorm {:d}".format(znorm))
+    posterior = quasi_laplace.margloglik_zcomps(pi, mu, sig2, oldz + newz, vmin, mureg, sigreg2, precll)
+    prob      = np.array(posterior[-len(newz):])
+    oldprob   = np.array(posterior[:len(oldz)])
+    probsum   = np.sum(prob)
+    old_probsum = np.sum(oldprob)
+
+
+    sort = np.argsort(prob)[::-1]              # index of decreasing order of prob. prob[sort] should be the sorted array
+    cum  = old_probsum + np.cumsum(prob[sort]) # cumulative sum, ensured that it will reach 1
+    #cum = np.cumsum(prob[sort])
+    #targ = np.sum(prob) * target
+    nsel = np.where(cum > target)[0]           # find where cum > target
+
+    # assure there is at least one zstate 
+    # sometimes posterior values could be so low that they can round off to zero
+    # and there would be no state with cum > targ
+    if len(nsel) == 0:
+        leadk = [[]]
+    else:
+        zlen = nsel[0] + 1                # when cum > targ for first time (add +1 since indexing starts from 0 / if nsel[0] = 4, then there are 5 states with higher probabilities)
+        sel  = sort[:zlen]                # These are our new selection
+        sel  = np.sort(sel)               # How about sorting them?
+        zlen = len(sel)
+
+        # For debug
+        #print(probsum)
+        #print(prob[sort][:10] / probsum)
+
+        # These are our leading states from which terms with znorm (k+1) will be created
+        leadk = [newz[sel[i]] for i in range(zlen)]
+
+    return probsum, old_probsum, leadk
+
 def create(nsnps, cmax, target, pi, mu, sig2, vmin, mureg, sigreg2, precll, is_covariate):
     ''' At every step of iteration, zstates are created to account for the causal SNPs. 
         It is a sparse matrix (of 0s and 1s) represented here as a list of lists. 
@@ -46,76 +88,60 @@ def create(nsnps, cmax, target, pi, mu, sig2, vmin, mureg, sigreg2, precll, is_c
     
     
         # Initialize for ||z|| = 0 and 1
-        zstates = [[]] 
+        zstates = [[]]
         newk = [[i] for i in range(nsnps)]
-        zstates += newk
     
         if cmax > 1:
-            oldk = newk
-            posterior = quasi_laplace.margloglik_zcomps(pi, mu, sig2, zstates, vmin, mureg, sigreg2, precll)
-            prob = np.array(posterior[-len(newk):])
-            probsum = np.sum(prob)
-            old_probsum = posterior[0]
-            #print ("Total probsum:", probsum)
+            oldk = zstates # which is now an empty array
+
+            # Add the ones which are required
+            newprob, oldprob, selk = prune(oldk, newk, target, pi, mu, sig2, vmin, mureg, sigreg2, precll)
+            if len(selk) > 0:
+                zstates += selk
+            oldk = zstates
+
+        else:
+            zstates += newk
     
         # Iterate over ||z|| = 2 to cmax
         norm = 1
         while norm < cmax:
 
-            if probsum < (1 - target) * old_probsum:
+            if newprob < (1 - target) * oldprob:
                 break
 
             norm += 1
-            sort = np.argsort(prob)[::-1]         # index of decreasing order of prob. prob[sort] should be the sorted array
-            cum  = np.cumsum(prob[sort])          # cumulative sum -- should be greater than target value
-            targ = probsum * target               # target value
-            nsel = np.where(cum > targ)[0]        # find when cum > targ
-    
-            # assure there is at least one zstate 
-            # sometimes posterior values could be so low that they can round off to zero
-            # and there would be no state with cum > targ
-            if len(nsel) == 0:
-                break;
+            nsel = len(selk)
+
+            if nsel == 0:
+                break
             else:
-                nsel = nsel[0] + 1                # when cum > targ for first time (add +1 since indexing starts from 0 / if nsel[0] = 4, then there are 5 states with higher probabilities)
-                sel  = sort[:nsel]                # These are our new selection
-                sel  = np.sort(sel)               # How about sorting them?
-                nsel = len(sel)
+                leadk = np.array(selk, dtype=np.int32).reshape(nsel * (norm-1))
     
-            # For debug
-            #print(probsum)
-            #print(prob[sort][:10] / probsum)
-    
-            # These are our leading states from which terms with norm (k+1) will be created
-            leadk = [oldk[sel[i]] for i in range(nsel)]
-    
-            # for first lead create all possible combinations
-            # from next lead onwards do not include duplicate combinations.
-            #    Note that a duplicate (k+1) entry is possible iff 
-            #    two k-mers have at least (k-1) similar elements.
-            #    e.g. [2,4,5,8] can be obtained from [2,4,5], [2,4,8], [2,5,8] or [4,5,8]
-            # check previous leads to see if any of them has (k-1) elements similar to the current one
-            # If so discard the duplicate.
-            #
-            # ^^^ the above logic has now been moved to a C++ function for speed up. 
-            # get the new zstates from a C++ function
-            leadk      = np.array(leadk, dtype=np.int32).reshape(nsel * (norm-1))
-            maxnewsize = nsel * (nsnps - norm + 1) * norm
-            newz       = np.zeros(maxnewsize, dtype=np.int32)
-            newstates  = zcreate(nsel, norm-1, nsnps, leadk, newz)
-            newsize    = newstates * norm
-            result     = np.array(newz[:newsize]).reshape((newstates, norm))
-            newk       = [sorted(list(result[i])) for i in range(newstates)]
-    
-    
-            zstates += newk
-    
-            # Stop iteration if sum(new posterior) is < 0.02 times sum(old posterior)
-            posterior = quasi_laplace.margloglik_zcomps(pi, mu, sig2, zstates, vmin, mureg, sigreg2, precll)
-            prob        = np.array(posterior[-len(newk):])
-            old_probsum = probsum
-            probsum     = np.sum(prob)
-            oldk = newk
+                # for first lead create all possible combinations
+                # from next lead onwards do not include duplicate combinations.
+                #    Note that a duplicate (k+1) entry is possible iff 
+                #    two k-mers have at least (k-1) similar elements.
+                #    e.g. [2,4,5,8] can be obtained from [2,4,5], [2,4,8], [2,5,8] or [4,5,8]
+                # check previous leads to see if any of them has (k-1) elements similar to the current one
+                # If so discard the duplicate.
+                #
+                # ^^^ the above logic has now been moved to a C++ function for speed up. 
+                # get the new zstates from a C++ function
+                maxnewsize = nsel * (nsnps - norm + 1) * norm
+                newz       = np.zeros(maxnewsize, dtype=np.int32)
+                newstates  = zcreate(nsel, norm-1, nsnps, leadk, newz)
+                newsize    = newstates * norm
+                result     = np.array(newz[:newsize]).reshape((newstates, norm))
+                newk       = [sorted(list(result[i])) for i in range(newstates)]
+
+                # Add the ones required
+                newprob, oldprob, selk = prune(oldk, newk, target, pi, mu, sig2, vmin, mureg, sigreg2, precll)
+                if len(selk) > 0:
+                    zstates += selk
+                oldk = zstates
+
+        print ("Created {:d} zstates".format(len(zstates)))
 
     else: # define zstates for covariate locus
 

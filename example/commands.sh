@@ -15,7 +15,7 @@ $BLORE --summary --gen ${POP3_IN}/Locus.*.gen --sample ${POP3_IN}/pop3.sample --
 $BLORE --meta --statinfo ${POP1_OUT}/pop1reg_summary ${POP2_OUT}/pop2reg_summary ${POP3_OUT}/pop3reg_summary \
               --feature input/functional_annotation/Locus.*.feat \
               --out output/meta \
-              --prefix bvslr \
-              --zmax 2 \
+              --prefix blore \
+              --zmax 3 \
               --muvar \
               --params 0.01 0 0.01 0.01
