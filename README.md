@@ -49,13 +49,63 @@ The first 3 columns are:
       - RSID: must have the same SNP identifier as in the genotype files
       - CHR: chromosome number
       - POS: base-pair position of the SNP.
+      
+## Usage
 
-## Quick start
+### Quick start
 - Clone the repository
 - `cd example`
 - `tar -zxvf input.tar.gz`
 This will create an example input folder, with genotypes at 20 loci for 3 populations, a sample file for each population and ENCODE data for the 20 loci.
 - `./commands.sh` to run B-LORE on the 3 populations to generate summary statistics, followed by a meta-analysis.
+
+### Command line arguments
+An executable file to run B-LORE is provided as `bin/blore`. This can used as follows:
+```
+blore [--help] [COMMAND] [OPTIONS]
+```
+There are 2 commands for B-LORE:
+- `-- summary` : for creating summary statistics of individual studies.
+- `-- meta` : for meta-analysis from summary statistics of multiple studies.
+
+Each of these 2 commands takes different options, as described below.
+
+#### blore --summary [OPTIONS]
+Create summary statistics of individual studies. Valid options are:
+
+Option | Description | Priority | Default value
+:---   | :---        |:---      | :--
+&#x2011;&#x2011;gen&nbsp;*filename(s)*  | Input genotype file(s), all loci should have separate genotype files and specified here (wildcards allowed) | Required    | --
+&#x2011;&#x2011;sample&nbsp;*filename*  | Input sample file | Required | --
+&#x2011;&#x2011;pheno&nbsp;*string*     | Name of the phenotype as it appears in the header of the sample file| Optional | `pheno`
+&#x2011;&#x2011;regoptiom               | If specified, the variance of the regularizer will be optimized, otherwise it will be N(0, σ<sup>2</sup>) where σ is specified by `--reg` | Optional | --
+&#x2011;&#x2011;reg&nbsp;*float*        | Value of the standard deviation (σ) of the regularizer | Optional | 0.01
+&#x2011;&#x2011;pca&nbsp;*int*          | Number of principal components of the genotype to be included as covariates | Optional | 0
+&#x2011;&#x2011;cov&nbsp;*string(s)*    | Name of covariate(s) as they appears in the header of the sample file, multiple covariates can be specified as space-separated strings | Optional | None
+&#x2011;&#x2011;out&nbsp;*directory*    | Name of the output directory where summary statistics will be created | Optional | directory of the genotype files
+&#x2011;&#x2011;prefix&nbsp;*string* | Prefix for the summary statistics files | Optional | `_summary`
+
+#### blore --meta [OPTIONS]
+Perform meta-analysis from summary statistics of multiple studies. Valid options are:
+
+Option | Description | Priority | Default value
+:---   | :---        |:---      | :--
+&#x2011;&#x2011;statinfo&nbsp;*filename(s)*   | Input file prefix(es) of summary statistics, full path is required | Required | --
+&#x2011;&#x2011;feature&nbsp;*filename(s)*    | Input file(s) for genomic feature tracks | Optional      | --
+&#x2011;&#x2011;params&nbsp;*floats* | Initial values of the hyperparameters, requires 4 space-separated floats corresponding to β<sub>π</sub> μ σ σ<sub>bg</sub>| Optional | 0.01 0.0 0.01 0.01
+&#x2011;&#x2011;muvar | If specified, μ will be optimized, otherwise it will be fixed to the initial value | Optional | --
+&#x2011;&#x2011;zmax&nbsp;*int* | Maximum number of causal SNPs allowed | Optional | 2
+&#x2011;&#x2011;out&nbsp;*directory*    | Name of the output directory where result files will be created | Optional | current directory
+&#x2011;&#x2011;prefix&nbsp;*string* | Prefix for the meta-analysis output files | Optional | `_meta`
+
+#### Example
+- Clone the repository
+- `cd example`
+- `tar -zxvf input.tar.gz`
+This will create an example input folder, with genotypes at 20 loci for 3 populations, a sample file for each population and ENCODE data for the 20 loci.
+
+View `commands.sh` in your favorite editor to see the commands, and execute `./commands.sh` to run B-LORE on the 3 populations to generate summary statistics, followed by a meta-analysis.
+
 
 ## License
 B-LORE is released under the GNU General Public License version 3. See LICENSE for more details. Copyright Johannes Soeding and Saikat Banerjee.
