@@ -65,8 +65,8 @@ An executable file to run B-LORE is provided as `bin/blore`. This can used as fo
 blore [--help] [COMMAND] [OPTIONS]
 ```
 There are 2 commands for B-LORE:
-- `-- summary` : for creating summary statistics of individual studies.
-- `-- meta` : for meta-analysis from summary statistics of multiple studies.
+- `--summary` : for creating summary statistics of individual studies.
+- `--meta` : for meta-analysis from summary statistics of multiple studies.
 
 Each of these 2 commands takes different options, as described below.
 
