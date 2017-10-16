@@ -106,6 +106,12 @@ This will create an example input folder, with genotypes at 20 loci for 3 popula
 
 View `commands.sh` in your favorite editor to see the commands, and execute `./commands.sh` to run B-LORE on the 3 populations to generate summary statistics, followed by a meta-analysis.
 
+## Citation
+- Saikat Banerjee, Lingyao Zeng, Heribert Schunkert and Johannes Soeding (2017). [Bayesian multiple logistic regression for meta-analyses of GWAS.](https://doi.org/10.1101/198911 "B-LORE method details") bioRxiv.
+
 
 ## License
 B-LORE is released under the GNU General Public License version 3. See LICENSE for more details. Copyright Johannes Soeding and Saikat Banerjee.
+
+## Contact
+[Saikat Banerjee](https://www.mpibpc.mpg.de/staff/42459)
