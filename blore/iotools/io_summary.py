@@ -206,7 +206,7 @@ class ReadSummary:
 
         try:
             with open(self._summaryfile, 'r') as mfile:
-                next(mfile)
+                discard1line = mfile.readline()
                 lindex = 0
                 self._locusnames[lindex] = mfile.readline().split()[0][1:]
                 for mline in mfile:
@@ -225,14 +225,15 @@ class ReadSummary:
                         self._snpinfo[lindex].append(this_snp)
                         self._freq[lindex].append(float(mline[6]))
                         self._vmin[lindex].append(float(mline[7]))
-        except:
+        except Exception as e:
             print ("Unexpected error while reading summary statistics from %s" % self._summaryfile)
+            print (e)
 
         #self._covnames = [[] for i in range(self._ncovloci)]
         if self._ncovloci > 0:
             try:
                 with open(self._covarfile, 'r') as mfile:
-                    next(mfile)
+                    discard1line = mfile.readline()
                     lindex = self._nloci
                     self._locusnames[lindex] = mfile.readline().split()[0][1:]
                     for mline in mfile:
@@ -252,8 +253,9 @@ class ReadSummary:
                             self._snpinfo[lindex].append(this_cov)
                             self._freq[lindex].append(0.0)
                             self._vmin[lindex].append(float(mline[2]))
-            except:
-                print("Unexpected error while reading covariance statistics from %s" % self._self._covarfile)
+            except Exception as e:
+                print("Unexpected error while reading covariance statistics from %s" % self._covarfile)
+                print (e)
 
         self._vmin = tuple(self._vmin)
         self._snpinfo = tuple(self._snpinfo)
