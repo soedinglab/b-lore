@@ -126,7 +126,7 @@ class DosageParser:
         self._nsnps = nsnps
         self._locusnames = locusnames
         nsample = (len(mline) - 5) / 3
-        if nsample.is_integer():
+        if float(nsample).is_integer():
             self._nsample = int(nsample)
         else:
             raise ValueError('Number of columns in genotype not divisible by 3')
