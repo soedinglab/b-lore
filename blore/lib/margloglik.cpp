@@ -342,6 +342,14 @@ compute_grad ( int nvar, int nhyp, int nfeat, int zlen,
         grad[nhyp - 1] = 0.5 * grad_sig;
     }
 
+    //printf ("%f \n", 0.5 * grad_sig);
+
+    //for (i = 0; i < nhyp; ++i) {
+    //    printf ("%f ", grad[i]);
+    //}
+
+    //printf ("\n");
+
 }		/* -----  end of function compute_grad  ----- */
 
 

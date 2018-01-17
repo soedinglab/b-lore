@@ -62,7 +62,7 @@ class EmpiricalBayes:
 
         # For the optimization of regularizer, all SNP features are 1, covariates are also considered as SNPs -- hence kc = 0
         k  = self._nsnpfeat if not self._regoptim else 1
-        kc = self._ncovfeat if not self._regoptim else 0
+        kc = max(1, self._ncovfeat) if not self._regoptim else 0
 
         # No need to create params if it is a rerun
         if self._rerun:
@@ -70,7 +70,7 @@ class EmpiricalBayes:
 
         # Else, initialize the parameters
         else:
-            params = np.zeros(k + 2 + kc)                     # k beta_pi for k features, 2 for beta_mu and beta_sigma, kc beta_cov
+            params = np.zeros(k + 2 + kc)                     # k beta_pi for k features, 2 for beta_mu and beta_sigma, 1 for beta_cov
             params[0] = self._params[0]                       # baseline pi taken from input
             params[1 : k] = 0.0                               # beta_pi for all features are initialized to 0
             params[k] = self._params[1]                       # beta_mu taken from input
@@ -150,7 +150,7 @@ class EmpiricalBayes:
 
         #print (params)
         #print ("MLL: %g" % -mll)
-        #print ("Gradient:", -der)
+        print ("Gradient:", -der[2])
 
         # Priors for mu and beta_pi
         if not regoptim:

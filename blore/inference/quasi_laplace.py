@@ -102,7 +102,7 @@ def margloglik_zcomps(pi, mu, sig2, z, v, mureg, reg2, prec, is_covariate=False)
     '''
 
     get_gradient = False
-    nhyp = 0
+    nhyp = 0 # in C++, nhyp is only required if gradient is calculated.
     feat = np.array([])
 
     logmL, zprob, grad = czcompgrad(pi, mu, sig2, z, v, nhyp, feat, mureg, reg2, prec, get_gradient, is_covariate)
