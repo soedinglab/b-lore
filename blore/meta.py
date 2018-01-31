@@ -83,8 +83,7 @@ def optimize_hyperparameters(input_files, feature_files, outdir, file_prefix, cm
 
     # Log the time taken
     total_time = end_time - start_time
-    read_time = readend_time - start_time
-    preproc_time = preprocend_time - readend_time
+    preproc_time = preprocend_time - start_time
     optim_time = optimend_time - preprocend_time
     write_time = end_time - optimend_time
     output.write_time(total_time, preproc_time, optim_time, write_time)
