@@ -54,7 +54,7 @@ class WriteResult:
             mfile.write("\tTotal time: {:.2f} sec\n".format(ttotal))
             mfile.write("\tPreprocessing: {:2f} sec\n".format(tpreprocess))
             mfile.write("\tOptimization: {:.2f} sec\n".format(toptim))
-            mfile.write("\tB-LORE time: {:2f} sec # Read data + Preprocessing + Optimization\n".format(toptim + tpreprocess + tread))
+            mfile.write("\tB-LORE time: {:2f} sec # Preprocessing + Optimization\n".format(toptim + tpreprocess))
             mfile.write("\tWrite result: {:.2f} sec\n".format(tout))
 
 
