@@ -9,6 +9,7 @@ class WriteSummary:
         self._summaryfile = os.path.join(outdir, "{:s}.vmin".format(file_prefix))
         self._covarfile   = os.path.join(outdir, "{:s}.cov".format(file_prefix))
         self._hessfile    = os.path.join(outdir, "{:s}.jac.npy".format(file_prefix))
+        self._logfile     = os.path.join(outdir, "{:s}.log".format(file_prefix))
 
         if not os.path.isdir(outdir):
             os.makedirs(outdir)
@@ -66,6 +67,19 @@ class WriteSummary:
                         mfile.write("{:3d}\t{:s}\t{:g}\n".format(nloci+i+1, cov[j], self._vmin[nloci+i][j]))
 
         np.save(self._hessfile, np.array(self._precll))
+
+
+    def write_time(self, ttotal, tread, tpreprocess, toptim, tlogreg, tout):
+        with open(self._logfile, 'w') as mfile:
+            mfile.write("Time taken\n")
+            mfile.write("=============\n")
+            mfile.write("\tTotal time: {:.2f} sec\n".format(ttotal))
+            mfile.write("\tRead data: {:.2f} sec\n".format(tread))
+            mfile.write("\tPreprocessing: {:2f} sec\n".format(tpreprocess))
+            mfile.write("\tOptimization: {:.2f} sec\n".format(toptim))
+            mfile.write("\tLogistic regression: {:2f} sec\n".format(tlogreg))
+            mfile.write("\tB-LORE time: {:2f} sec # Optimization + Logistic regression\n".format(toptim + tlogreg))
+            mfile.write("\tWrite result: {:.2f} sec\n".format(tout))
 
 
 class ReadSummary:

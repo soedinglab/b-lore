@@ -150,7 +150,7 @@ class EmpiricalBayes:
 
         #print (params)
         #print ("MLL: %g" % -mll)
-        print ("Gradient:", -der[2])
+        #print ("Gradient:", -der[2])
 
         # Priors for mu and beta_pi
         if not regoptim:

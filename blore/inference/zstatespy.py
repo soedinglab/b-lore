@@ -141,8 +141,6 @@ def create(nsnps, cmax, target, pi, mu, sig2, vmin, mureg, sigreg2, precll, is_c
                     zstates += selk
                 oldk = zstates
 
-        print ("Created {:d} zstates".format(len(zstates)))
-
     else: # define zstates for covariate locus
 
         zstates = [[i for i in range(nsnps)]]

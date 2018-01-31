@@ -2,6 +2,7 @@
 
 import numpy as np
 import collections
+import time
 
 from inference.empirical_bayes import EmpiricalBayes
 from inference import quasi_laplace
@@ -25,6 +26,8 @@ def optimize_hyperparameters(input_files, feature_files, outdir, file_prefix, cm
            * write the result
     '''
 
+    start_time = time.time()
+
     # Read and combine the input summary statistics
     summary_stat = SummaryStatistics(input_files)
     summary_stat.combine()
@@ -42,6 +45,9 @@ def optimize_hyperparameters(input_files, feature_files, outdir, file_prefix, cm
 
     func_annot = FunctionalAnnotations(snpinfo, iscov, feature_files)
     features = func_annot.features
+
+    preprocend_time = time.time()
+
 
     # Run the empirical Bayes optimization
     emp_bayes = EmpiricalBayes(vmin, precll, features, iscov, mureg, sigreg2, 1, muvar, params = params)
@@ -66,7 +72,19 @@ def optimize_hyperparameters(input_files, feature_files, outdir, file_prefix, cm
         locusres = create_locus_result(locnames[l], iscov[l], snpinfo[l], vmin[l], precll[l], zstates[l], zcomps, pi, mu, sig2)
         resultlist.append(locusres)
 
+    optimend_time = time.time()
+
     # Write output
     output = WriteResult(outdir, file_prefix)
     output.set_result(resultlist, sigreg, mureg)
     output.write()
+
+    end_time = time.time()
+
+    # Log the time taken
+    total_time = end_time - start_time
+    read_time = readend_time - start_time
+    preproc_time = preprocend_time - readend_time
+    optim_time = optimend_time - preprocend_time
+    write_time = end_time - optimend_time
+    output.write_time(total_time, preproc_time, optim_time, write_time)

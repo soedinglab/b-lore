@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 from snptools import dosageparser
 from snptools import gtutils
@@ -29,6 +30,8 @@ def pcacomp(data, n):
 
 def summary(samplefile, genotypefiles, phenotypename, covariatenames, mureg, sigreg, tolerance, npca, outdir, file_prefix, regoptim):
 
+    start_time = time.time()
+
     # Process the input data
     data = parse_dosage_data(samplefile, genotypefiles, phenotypename)
     nsample   = data.nsample   # number of samples
@@ -38,17 +41,16 @@ def summary(samplefile, genotypefiles, phenotypename, covariatenames, mureg, sig
     genotype  = data.genotype  # list of genotype-matrix for all loci
     locnames  = data.locusnames
 
+    readend_time = time.time()
+
     # Remove the snps which are duplicates.
     gteditor = gtutils.Editor(genotype, snpinfo)
     gteditor.remove_duplicates()
-
     # Binomial standardization
     gteditor.standardize()
-
     # Get the final genotype
     gt = gteditor.genotype
     #nsnps = gteditor.nsnps #np.array([x.shape[1] for x in gt])
-
     # Covariates
     cov, covinfo = io_covariates.read(samplefile, covariatenames, nsample)
     if npca > 0:
@@ -62,6 +64,8 @@ def summary(samplefile, genotypefiles, phenotypename, covariatenames, mureg, sig
         else:
             cov = thiscov
 
+    preprocend_time = time.time()
+
     # Optimize sigma_reg
     if regoptim:
         print ("Optimizing regularizer ...")
@@ -70,6 +74,8 @@ def summary(samplefile, genotypefiles, phenotypename, covariatenames, mureg, sig
         sigreg_optim.update()
         mureg = sigreg_optim.mureg
         sigreg = sigreg_optim.sigmareg
+
+    optimend_time = time.time()
 
     # Run the logistic regression
     print ("Calculating summary statistics")
@@ -80,6 +86,8 @@ def summary(samplefile, genotypefiles, phenotypename, covariatenames, mureg, sig
     precll = logreg.precll
     iscov = logreg.iscov
 
+    logregend_time = time.time()
+
     # Print out the results
     print ("Saving results")
     dupes = gteditor.duplicate_snps
@@ -87,3 +95,14 @@ def summary(samplefile, genotypefiles, phenotypename, covariatenames, mureg, sig
     summary = WriteSummary(outdir, file_prefix)
     summary.set_statistics(snpinfo, covinfo, dupes, freq, v0, vmin, precll, mureg, sigreg, iscov, locnames)
     summary.write()
+
+    end_time = time.time()
+
+    # Print out the time
+    total_time = end_time - start_time
+    read_time  = readend_time - start_time
+    preprocess_time = preprocend_time - readend_time
+    optim_time = optimend_time - preprocend_time
+    logreg_time = logregend_time - optimend_time
+    write_time = end_time - logregend_time
+    summary.write_time(total_time, read_time, preprocess_time, optim_time, logreg_time, write_time)

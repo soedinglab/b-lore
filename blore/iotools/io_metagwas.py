@@ -8,6 +8,7 @@ class WriteResult:
         self._outdir = outdir
         self._file_prefix = file_prefix
         self._statfile  = os.path.join(outdir, "%s.stat"       % file_prefix)
+        self._logfile   = os.path.join(outdir, "%s.log"        % file_prefix)
         self._probdir   = os.path.join(outdir, "%s_res"        % file_prefix)
         self._hessfile  = os.path.join(outdir, "%s.prec.npy"   % file_prefix)
         self._covfile   = os.path.join(outdir, "%s.covariates" % file_prefix)
@@ -44,6 +45,18 @@ class WriteResult:
             self.write_zsfile(self._zstatedir, res)
         self.write_statfile(self._statfile, nloci, nsnps, ncov, self._mureg, self._sigreg)
         #np.save(self._hessfile, np.array(self._precll))
+
+
+    def write_time(self, ttotal, tpreprocess, toptim, tout):
+        with open(self._logfile, 'w') as mfile:
+            mfile.write("Time taken\n")
+            mfile.write("=============\n")
+            mfile.write("\tTotal time: {:.2f} sec\n".format(ttotal))
+            mfile.write("\tPreprocessing: {:2f} sec\n".format(tpreprocess))
+            mfile.write("\tOptimization: {:.2f} sec\n".format(toptim))
+            mfile.write("\tB-LORE time: {:2f} sec # Read data + Preprocessing + Optimization\n".format(toptim + tpreprocess + tread))
+            mfile.write("\tWrite result: {:.2f} sec\n".format(tout))
+
 
 
     @staticmethod
