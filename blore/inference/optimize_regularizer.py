@@ -17,6 +17,7 @@ class OptimizeRegularizer:
         self._tolerance = tol
         self._cmax = 1
         self._covariates = covariates
+        self._niter = 0
 
 
     @property
@@ -27,6 +28,11 @@ class OptimizeRegularizer:
     @property
     def sigmareg(self):
         return self._sigmareg
+
+
+    @property
+    def niter(self):
+        return self._niter
 
     
     def update(self):
@@ -70,6 +76,8 @@ class OptimizeRegularizer:
                 iterate = False
             mureg_old = mureg_new
             sigmareg_old = sigmareg_new
+
+            self._niter += 1
 
         self._mureg = mureg_new
         self._sigmareg = sigmareg_new

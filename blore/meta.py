@@ -68,6 +68,7 @@ def optimize_hyperparameters(input_files, feature_files, outdir, file_prefix, cm
     for l in range(nloci):
 
         pi, mu, sig2 = hyperparameters.transform(params, features[l], iscov[l])
+        beta_pi = params[:features[l].shape[0]]
         zcomps = quasi_laplace.margloglik_zcomps(pi, mu, sig2, zstates[l], vmin[l], mureg, sigreg2, precll[l], iscov[l])
         locusres = create_locus_result(locnames[l], iscov[l], snpinfo[l], vmin[l], precll[l], zstates[l], zcomps, pi, mu, sig2)
         resultlist.append(locusres)

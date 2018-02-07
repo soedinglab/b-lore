@@ -67,6 +67,7 @@ def summary(samplefile, genotypefiles, phenotypename, covariatenames, mureg, sig
     preprocend_time = time.time()
 
     # Optimize sigma_reg
+    niter = 0
     if regoptim:
         print ("Optimizing regularizer ...")
         cmax = 1
@@ -74,6 +75,7 @@ def summary(samplefile, genotypefiles, phenotypename, covariatenames, mureg, sig
         sigreg_optim.update()
         mureg = sigreg_optim.mureg
         sigreg = sigreg_optim.sigmareg
+        niter = sigreg_optim.niter
 
     optimend_time = time.time()
 
@@ -93,7 +95,7 @@ def summary(samplefile, genotypefiles, phenotypename, covariatenames, mureg, sig
     dupes = gteditor.duplicate_snps
     freq  = gteditor.snpfreq
     summary = WriteSummary(outdir, file_prefix)
-    summary.set_statistics(snpinfo, covinfo, dupes, freq, v0, vmin, precll, mureg, sigreg, iscov, locnames)
+    summary.set_statistics(snpinfo, covinfo, dupes, freq, v0, vmin, precll, mureg, sigreg, iscov, locnames, niter)
     summary.write()
 
     end_time = time.time()

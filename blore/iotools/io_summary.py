@@ -15,7 +15,7 @@ class WriteSummary:
             os.makedirs(outdir)
 
 
-    def set_statistics(self, snpinfo, covinfo, dupes, freq, v0, vmin, precll, mureg, sigreg, iscov, locusnames):
+    def set_statistics(self, snpinfo, covinfo, dupes, freq, v0, vmin, precll, mureg, sigreg, iscov, locusnames, niter):
         self._snpinfo = snpinfo
         self._covinfo = covinfo
         self._dupes = dupes
@@ -27,6 +27,7 @@ class WriteSummary:
         self._mureg = mureg
         self._is_covariate = iscov
         self._locusnames = locusnames
+        self._niter = niter
 
 
     def write(self):
@@ -41,6 +42,7 @@ class WriteSummary:
             mfile.write("{:g} #mureg\n".format(self._mureg))
             mfile.write("{:g} #base_v0\n".format(self._v0))
             mfile.write("{:d} #Number of covariate loci\n".format(ncovloci))
+            mfile.write("{:d} #Number of iterations for optimizing regularizer\n".format(self._niter))
 
         with open(self._summaryfile, 'w') as mfile:
             mfile.write("#LOCUSNUM\tRSID\tPOS\tALT\tREF\tDUPE\tFREQ_REF\tVMIN\n")
