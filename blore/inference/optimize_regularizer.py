@@ -9,7 +9,7 @@ from inference.empirical_bayes import EmpiricalBayes
 class OptimizeRegularizer:
 
 
-    def __init__(self, genotype, phenotype, mu = 0.0, sigma = 0.01, tol = 0.0001, covariates = None):
+    def __init__(self, genotype, phenotype, mu = 0.0, sigma = 0.01, tol = 1, covariates = None):
         self._genotype = genotype
         self._phenotype = phenotype
         self._mureg = mu
@@ -38,8 +38,9 @@ class OptimizeRegularizer:
     def update(self):
         mureg_old = self._mureg
         sigmareg_old = self._sigmareg
-        tol = self._tolerance
+        sigmareg_old2 = self._sigmareg
 
+        skip_step = False
         iterate = True
         while iterate:
 
@@ -61,23 +62,50 @@ class OptimizeRegularizer:
             mu = params[1]
             sigma2 = np.exp(params[2])
 
-            # Get new values for mu_reg and sigma_reg
             mureg_new = mu
             sigmareg_new = np.sqrt(sigma2)
-
-            # Check for convergence
-            mureg_diff = mureg_new - mureg_old
-            sigmareg_diff = sigmareg_new - sigmareg_old
-            #print ("New sigmareg = %g, old sigmareg = %g" % (sigmareg_new, sigmareg_old))
-            #print ("**** Sigmareg difference is %g" % sigmareg_diff)
-            #print ("New mureg = %g, old mureg = %g" % (mureg_new, mureg_old))
-            #print ("**** Mureg difference is %g" % mureg_diff)
-            if abs(mureg_diff) < tol and abs(sigmareg_diff) < tol :
-                iterate = False
+            checkmu  = self.check_convergence(mureg_new, mureg_old)
             mureg_old = mureg_new
-            sigmareg_old = sigmareg_new
 
+            if emp_bayes.success:
+
+                # Check for convergence
+                if (sigmareg_new > 0):
+                    if skip_step:
+                        checksig = self.check_convergence(sigmareg_new, sigmareg_old2)
+                    else:
+                        checksig = self.check_convergence(sigmareg_new, sigmareg_old)
+                    sigmareg_old = sigmareg_new
+                else:
+                    # negative value of sigma 0. RESTART!
+                    mureg_old = 0
+                    sigmareg_old = np.random.normal(0.01, 0.001)
+    
+                if checksig and checkmu:
+                    iterate = False
+                    mureg_optimized = mureg_new
+                    sigmareg_optimized = sigmareg_new
+
+            else:
+                sigmareg_old2 = sigmareg_old
+                sigmareg_old = sigmareg_new
+                skip_step = True
+                
             self._niter += 1
 
-        self._mureg = mureg_new
-        self._sigmareg = sigmareg_new
+        self._mureg = mureg_optimized
+        self._sigmareg = sigmareg_optimized
+
+
+    def check_convergence(self, x, xold):
+        check = False
+        tol = self._tolerance
+        diff = x - xold
+        if diff == 0:
+            check = True
+        if not check and xold != 0.0:
+            diff_percent = abs(diff) / xold
+            if diff_percent < tol:
+                check = True
+            
+        return check

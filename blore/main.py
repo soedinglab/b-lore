@@ -202,7 +202,7 @@ if (opts.summary):
     covnames = opts.covariates
     sigreg = opts.sigreg
     mureg = 0.0
-    tolerance = 0.0001
+    tolerance = 0.001
     npca = opts.npca
     regoptim = opts.regoptim
 

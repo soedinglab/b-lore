@@ -47,6 +47,8 @@ class EmpiricalBayes:
             self.fix_zstates(zstates)
             self._params = np.array([-5.5, 0, -7.5])
 
+        self._success = False
+
 
     @property
     def params(self):
@@ -56,6 +58,11 @@ class EmpiricalBayes:
     @property
     def zstates(self):
         return self._global_zstates
+
+
+    @property
+    def success(self):
+        return self._success
 
 
     def fit(self):
@@ -103,6 +110,7 @@ class EmpiricalBayes:
                                             })
 
         self._params = lml_min.x
+        self._success = lml_min.success
         #print (lml_min)
 
 
