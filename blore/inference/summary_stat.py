@@ -2,6 +2,7 @@
 
 import numpy as np
 import collections
+import os
 from iotools.io_summary import ReadSummary
 
 STUDYINFO_FIELDS = ['snpinfo', 'vmin', 'precll', 'sigreg']
@@ -11,8 +12,13 @@ class StudyInfo(collections.namedtuple('_StudyInfo', STUDYINFO_FIELDS)):
 
 class SummaryStatistics:
 
-    def __init__(self, filepaths):
-        self._filepaths = filepaths
+    def __init__(self, studydirs, locusnamesfile):
+        locusprefixes, iscov = self.read_locusnames(os.path.realpath(locusnamesfile))
+        self._studydirs = studydirs
+        self._locusprefixes = locusprefixes
+        self._nloci = len(locusprefixes)
+        self._nstudies = len(self._studydirs)
+        self._iscov = iscov
 
 
     @property
@@ -47,7 +53,7 @@ class SummaryStatistics:
 
     @property
     def locnames(self):
-        return self._locnames
+        return self._locusprefixes
 
 
     @property
@@ -56,49 +62,55 @@ class SummaryStatistics:
         #return [x.rsid for x in self._snpinfo[-1]]
 
 
+    @staticmethod
+    def read_locusnames(locusfile):
+        locusprefixes = list()
+        iscov = list()
+        with open(locusfile, 'r') as mfile:
+            for mlstr in mfile:
+                mline = mlstr.split()
+                locusprefix = mline[0]
+                if len(mline) > 1:
+                    flag = bool(int(mline[1]))
+                else:
+                    flag = True
+                locusprefixes.append(locusprefix)
+                iscov.append(not flag)
+        return locusprefixes, iscov
+
+
     def combine(self):
         ''' Combine the study summaries of each locus one by one
         '''
 
-        nstudies = len(self._filepaths)
+        nstudies = self._nstudies
         snpinfo_list  = [[] for i in range(nstudies)]
         vmin_list     = [[] for i in range(nstudies)]
         precll_list   = [[] for i in range(nstudies)]
         sigreg_list   = [[] for i in range(nstudies)]
-        iscov_list    = [[] for i in range(nstudies)]
-        locnames_list = [[] for i in range(nstudies)]
 
         sigfact = 0
         mufact  = 0
 
         # Read the summary statistics from all studies
-        for i, studypath in enumerate(self._filepaths):
-            print ('Reading summary statistics from %s' % studypath)
-            summary = ReadSummary(studypath)
+        for i, studydir in enumerate(self._studydirs):
+            print ('Reading summary statistics from {:s}'.format(studydir))
+            summary = ReadSummary(studydir, self._locusprefixes)
             summary.read()
 
             snpinfo_list[i]  = summary.snpinfo
             vmin_list[i]     = summary.vmin
             precll_list[i]   = summary.precll
             sigreg_list[i]   = summary.sigreg
-            iscov_list[i]    = summary.iscov
-            locnames_list[i] = summary.locnames
     
             sigfact += 1 / summary.sigreg / summary.sigreg
             mufact  += summary.mureg / summary.sigreg / summary.sigreg
 
-        print ("Combining %i studies" % len(self._filepaths))
+        print ("Combining {:d} studies".format(nstudies))
         # Calculate some important statistics
         sigreg = np.sqrt(1 / sigfact)
         mureg = sigreg * sigreg * mufact
-        nloci = len(snpinfo_list[0])
-
-        # check if all studies have equal number of loci
-        try:
-            assert all(len(x) == nloci for x in snpinfo_list)
-        except AssertionError:
-            print ('Error: Found unequal number of loci among studies')
-            raise
+        nloci = self._nloci
 
         # Combine summary statistics of each locus
         snpinfo = list()
@@ -123,8 +135,6 @@ class SummaryStatistics:
         self._vmin = vmin
         self._sigreg = sigreg
         self._mureg = mureg
-        self._iscov = iscov_list[0] # Assumes iscov list of study[0] is same as other studies
-        self._locnames = locnames_list[0]
 
 
     def combine_single_locus(self, studies):

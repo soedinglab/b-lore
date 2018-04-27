@@ -49,13 +49,13 @@ def summary(samplefile, genotypefiles, phenotypename, covariatenames, mureg, sig
     # Binomial standardization
     gteditor.standardize()
     # Get the final genotype
-    gt = gteditor.genotype
+    gtstd = gteditor.genotype
     #nsnps = gteditor.nsnps #np.array([x.shape[1] for x in gt])
     # Covariates
     cov, covinfo = io_covariates.read(samplefile, covariatenames, nsample)
     if npca > 0:
         covinfo[0] += ["PC%i" % (i+1) for i in range(npca)]
-        gt_tot = np.concatenate(gt, axis=1)
+        gt_tot = np.concatenate(gtstd, axis=1)
         pca = pcacomp(gt_tot, npca)
         pcastd = (pca - np.mean(pca, axis = 0)) / np.std(pca, axis=0)
         thiscov = pcastd
@@ -63,6 +63,13 @@ def summary(samplefile, genotypefiles, phenotypename, covariatenames, mureg, sig
             cov = np.append(cov, thiscov, axis=1) # cov will have a shape of nsample x ncov
         else:
             cov = thiscov
+
+    # Remove missing phenotype after everything
+    keep = ~np.isnan(np.array(phenotype))
+    phenotype = tuple(np.array(phenotype)[keep])
+    gt = tuple([x[keep, :] for x in gtstd])
+    if cov is not None:
+        cov = cov[keep, :]
 
     preprocend_time = time.time()
 

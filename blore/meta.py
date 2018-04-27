@@ -15,7 +15,7 @@ from utils import hyperparameters
 from utils.result import create_locus_result
 
 
-def optimize_hyperparameters(input_files, feature_files, outdir, file_prefix, cmax, muvar, params):
+def optimize_hyperparameters(statdirs, locusnamesfile, feature_files, outdir, file_prefix, cmax, muvar, params):
 
     '''Main calling function of the optimization.
        It performs the following operations:
@@ -29,7 +29,7 @@ def optimize_hyperparameters(input_files, feature_files, outdir, file_prefix, cm
     start_time = time.time()
 
     # Read and combine the input summary statistics
-    summary_stat = SummaryStatistics(input_files)
+    summary_stat = SummaryStatistics(statdirs, locusnamesfile)
     summary_stat.combine()
     snpinfo  = summary_stat.snpinfo
     vmin     = summary_stat.vmin
@@ -50,13 +50,24 @@ def optimize_hyperparameters(input_files, feature_files, outdir, file_prefix, cm
 
 
     # Run the empirical Bayes optimization
+    #emp_bayes = EmpiricalBayes(vmin, precll, features, iscov, mureg, sigreg2, 1, muvar, params = params)
+    #emp_bayes.fit()
+    #params = emp_bayes.params
+    #if cmax > 1:
+    #    while znorm < cmax:
+    #        emp_bayes = EmpiricalBayes(vmin, precll, features, iscov, mureg, sigreg2, cmax, False, params = params, rerun = True)
+    #        emp_bayes.fit()
+    #params = emp_bayes.params
+    znorm = 1
     emp_bayes = EmpiricalBayes(vmin, precll, features, iscov, mureg, sigreg2, 1, muvar, params = params)
     emp_bayes.fit()
     params = emp_bayes.params
-    if cmax > 1:
-        emp_bayes = EmpiricalBayes(vmin, precll, features, iscov, mureg, sigreg2, cmax, False, params = params, rerun = True)
+    while znorm < cmax:
+        znorm += 1
+        emp_bayes = EmpiricalBayes(vmin, precll, features, iscov, mureg, sigreg2, znorm, False, params = params, rerun = True)
         emp_bayes.fit()
-    params = emp_bayes.params
+        params = emp_bayes.params
+
     zstates = emp_bayes.zstates
 
     # Get the final results
@@ -88,3 +99,10 @@ def optimize_hyperparameters(input_files, feature_files, outdir, file_prefix, cm
     optim_time = optimend_time - preprocend_time
     write_time = end_time - optimend_time
     output.write_time(total_time, preproc_time, optim_time, write_time)
+
+    # Temporary // get the functional annotations
+    import os
+    beta_pi = params[:features[0].shape[0]]
+    beta_outfile = os.path.join(outdir, "{:s}.betapi".format(file_prefix))
+    np.savetxt(beta_outfile, beta_pi)
+    

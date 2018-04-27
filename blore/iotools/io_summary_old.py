@@ -5,16 +5,17 @@ from snptools.snpinfo import SnpInfo
 class WriteSummary:
 
     def __init__(self, outdir, file_prefix):
-        self._statfile    = os.path.join(outdir, "%s.stat"    % file_prefix)
-        self._summaryfile = os.path.join(outdir, "%s.vmin"    % file_prefix)
-        self._covarfile   = os.path.join(outdir, "%s.cov"     % file_prefix)
-        self._hessfile    = os.path.join(outdir, "%s.jac.npy" % file_prefix)
+        self._statfile    = os.path.join(outdir, "{:s}.stat".format(file_prefix))
+        self._summaryfile = os.path.join(outdir, "{:s}.vmin".format(file_prefix))
+        self._covarfile   = os.path.join(outdir, "{:s}.cov".format(file_prefix))
+        self._hessfile    = os.path.join(outdir, "{:s}.jac.npy".format(file_prefix))
+        self._logfile     = os.path.join(outdir, "{:s}.log".format(file_prefix))
 
         if not os.path.isdir(outdir):
             os.makedirs(outdir)
 
 
-    def set_statistics(self, snpinfo, covinfo, dupes, freq, v0, vmin, precll, mureg, sigreg, iscov):
+    def set_statistics(self, snpinfo, covinfo, dupes, freq, v0, vmin, precll, mureg, sigreg, iscov, locusnames, niter):
         self._snpinfo = snpinfo
         self._covinfo = covinfo
         self._dupes = dupes
@@ -25,45 +26,62 @@ class WriteSummary:
         self._sigreg = sigreg
         self._mureg = mureg
         self._is_covariate = iscov
+        self._locusnames = locusnames
+        self._niter = niter
 
 
     def write(self):
         nloci = len(self._snpinfo)
         ncovloci = np.sum(self._is_covariate)
         nsnps = [len(self._snpinfo[i]) for i in range(nloci)]
-        nsnps_str = ["%i" % i for i in nsnps]
+        nsnps_str = " ".join(["{:d}".format(i) for i in nsnps])
         with open(self._statfile, 'w') as mfile:
-            mfile.write("%i loci\n" % nloci)
-            mfile.write(" ".join(nsnps_str) + '\n')
-            mfile.write("%g #sigreg\n" % self._sigreg)
-            mfile.write("%g #mureg\n" % self._mureg)
-            mfile.write("%g #base_v0\n" % self._v0)
-            mfile.write("%g #Number of hypothetical covariate loci\n" % ncovloci)
+            mfile.write("{:d} loci\n".format(nloci))
+            mfile.write("{:s}\n".format(nsnps_str))
+            mfile.write("{:g} #sigreg\n".format(self._sigreg))
+            mfile.write("{:g} #mureg\n".format(self._mureg))
+            mfile.write("{:g} #base_v0\n".format(self._v0))
+            mfile.write("{:d} #Number of covariate loci\n".format(ncovloci))
+            mfile.write("{:d} #Number of iterations for optimizing regularizer\n".format(self._niter))
 
         with open(self._summaryfile, 'w') as mfile:
-            mfile.write('Locus rsid bp_location alt_all ref_all is_dupe freq_ref vmin\n')
+            mfile.write("#LOCUSNUM\tRSID\tPOS\tALT\tREF\tDUPE\tFREQ_REF\tVMIN\n")
             for i in range(nloci):
-                #mfile.write("%s" % self._locus_names[i])
+                mfile.write("#{:s}\n".format(self._locusnames[i]))
                 snps = self._snpinfo[i]
                 removed = [item.rsid for item in self._dupes[i]]
                 k = 0
                 for j in range(len(snps)):
                     if snps[j].rsid in removed:
                         indx = removed.index(snps[j].rsid)
-                        mfile.write("%3i\t%15s\t%10s\t%s\t%s\t%1i\tNA\tNA\n" % (i+1, snps[j].rsid, snps[j].bp_location, snps[j].alt_allele, snps[j].ref_allele, 1))
+                        mfile.write("{:3d}\t{:15s}\t{:10s}\t{:s}\t{:s}\t{:1d}\tNA\tNA\n".format(i+1, snps[j].rsid, snps[j].bp_location, snps[j].alt_allele, snps[j].ref_allele, 1))
                     else:
-                        mfile.write("%3i\t%15s\t%10s\t%s\t%s\t%1i\t%g\t%g\n" % (i+1, snps[j].rsid, snps[j].bp_location, snps[j].alt_allele, snps[j].ref_allele, 0, self._freq[i][k], self._vmin[i][k]))
+                        mfile.write("{:3d}\t{:15s}\t{:10s}\t{:s}\t{:s}\t{:1d}\t{:g}\t{:g}\n".format(i+1, snps[j].rsid, snps[j].bp_location, snps[j].alt_allele, snps[j].ref_allele, 0, self._freq[i][k], self._vmin[i][k]))
                         k += 1
 
         if ncovloci > 0:
             with open(self._covarfile, 'w') as mfile:
-                mfile.write('Locus Covariate_name vmin\n')
+                mfile.write("#LOCUS\tNAME\tVMIN\n")
                 for i in range(ncovloci):
+                    mfile.write("#Covariate_{:d}\n".format(i + 1))
                     cov = self._covinfo[i]
                     for j in range(len(cov)):
-                        mfile.write("%3i\t%s\t%g\n" %(nloci+i+1, cov[j], self._vmin[nloci+i][j]))
+                        mfile.write("{:3d}\t{:s}\t{:g}\n".format(nloci+i+1, cov[j], self._vmin[nloci+i][j]))
 
         np.save(self._hessfile, np.array(self._precll))
+
+
+    def write_time(self, ttotal, tread, tpreprocess, toptim, tlogreg, tout):
+        with open(self._logfile, 'w') as mfile:
+            mfile.write("Time taken\n")
+            mfile.write("=============\n")
+            mfile.write("\tTotal time: {:.2f} sec\n".format(ttotal))
+            mfile.write("\tRead data: {:.2f} sec\n".format(tread))
+            mfile.write("\tPreprocessing: {:2f} sec\n".format(tpreprocess))
+            mfile.write("\tOptimization: {:.2f} sec\n".format(toptim))
+            mfile.write("\tLogistic regression: {:2f} sec\n".format(tlogreg))
+            mfile.write("\tB-LORE time: {:2f} sec # Optimization + Logistic regression\n".format(toptim + tlogreg))
+            mfile.write("\tWrite result: {:.2f} sec\n".format(tout))
 
 
 class ReadSummary:
@@ -72,11 +90,11 @@ class ReadSummary:
     _read_stats_once = False
     _read_hessian_once = False
 
-    def __init__(self, infile):
-        self._statfile    = os.path.realpath("%s.stat"    % infile)
-        self._summaryfile = os.path.realpath("%s.vmin"    % infile)
-        self._covarfile   = os.path.realpath("%s.cov"     % infile)
-        self._hessfile    = os.path.realpath("%s.jac.npy" % infile)
+    def __init__(self, file_prefix):
+        self._statfile    = os.path.realpath("{:s}.stat".format(file_prefix))
+        self._summaryfile = os.path.realpath("{:s}.vmin".format(file_prefix))
+        self._covarfile   = os.path.realpath("{:s}.cov".format(file_prefix))
+        self._hessfile    = os.path.realpath("{:s}.jac.npy".format(file_prefix))
 
 
     @property
@@ -142,7 +160,7 @@ class ReadSummary:
     @property
     def locnames(self):
         self._read_vmin()
-        return self._locnames
+        return self._locusnames
 
 
     @property
@@ -200,44 +218,60 @@ class ReadSummary:
         self._snpinfo = [[] for i in range(self._nloci + self._ncovloci)]
         self._freq = [[] for i in range(self._nloci + self._ncovloci)]
         self._iscov = [False for i in range(self._nloci)] + [True for i in range(self._ncovloci)]
-        self._locnames = ["Locus.{:03d}".format(i + 1) for i in range(self._nloci + self._ncovloci)]
+        self._locusnames = [[] for i in range(self._nloci + self._ncovloci)]
 
         try:
             with open(self._summaryfile, 'r') as mfile:
-                next(mfile)
-                for line in mfile:
-                    mline = line.split()
-                    if int(mline[5]) == 0:
-                        locus_indx = int(mline[0]) - 1
+                discard1line = mfile.readline()
+                lindex = 0
+                self._locusnames[lindex] = mfile.readline().split()[0][1:]
+                for mline in mfile:
+                    mline = mline.strip()
+                    if mline.startswith("#"):
+                        lindex += 1
+                        self._locusnames[lindex] = mline.split()[0][1:]
+                    else:
+                        mline = mline.split()
+                        if int(mline[5]) == 1: continue
+                        #lindex = int(mline[0]) - 1
                         this_snp = SnpInfo(rsid = mline[1],
                                        bp_location = mline[2],
-                                       alt_allele = mline[3],
-                                       ref_allele = mline[4])
-                        self._snpinfo[locus_indx].append(this_snp)
-                        self._freq[locus_indx].append(float(mline[6]))
-                        self._vmin[locus_indx].append(float(mline[7]))
-        except:
+                                       ref_allele = mline[4],
+                                       alt_allele = mline[3])
+                        self._snpinfo[lindex].append(this_snp)
+                        self._freq[lindex].append(float(mline[6]))
+                        self._vmin[lindex].append(float(mline[7]))
+        except Exception as e:
             print ("Unexpected error while reading summary statistics from %s" % self._summaryfile)
+            print (e)
 
         #self._covnames = [[] for i in range(self._ncovloci)]
         if self._ncovloci > 0:
             try:
                 with open(self._covarfile, 'r') as mfile:
-                    next(mfile)
-                    for line in mfile:
-                        mline = line.split()
-                        locus_indx = int(mline[0]) - 1
-                        this_cov = SnpInfo(rsid = mline[1],
-                                           bp_location = "0",
-                                           alt_allele = "NA",
-                                           ref_allele = "NA")
-                        #cov_indx = locus_indx - self._nloci
-                        #self._covnames[cov_indx].append(mline[1])
-                        self._snpinfo[locus_indx].append(this_cov)
-                        self._freq[locus_indx].append(0.0)
-                        self._vmin[locus_indx].append(float(mline[2]))
-            except:
-                print("Unexpected error while reading covariance statistics from %s" % self._self._covarfile)
+                    discard1line = mfile.readline()
+                    lindex = self._nloci
+                    self._locusnames[lindex] = mfile.readline().split()[0][1:]
+                    for mline in mfile:
+                        mline = mline.strip()
+                        if mline.startswith("#"):
+                            lindex += 1
+                            self._locusnames[lindex] = mline.split()[0][1:]
+                        else:
+                            mline = mline.split()
+                            #lindex = int(mline[0]) - 1
+                            this_cov = SnpInfo(rsid = mline[1],
+                                               bp_location = "0",
+                                               alt_allele = "NA",
+                                               ref_allele = "NA")
+                            #cov_indx = lindex - self._nloci
+                            #self._covnames[cov_indx].append(mline[1])
+                            self._snpinfo[lindex].append(this_cov)
+                            self._freq[lindex].append(0.0)
+                            self._vmin[lindex].append(float(mline[2]))
+            except Exception as e:
+                print("Unexpected error while reading covariance statistics from %s" % self._covarfile)
+                print (e)
 
         self._vmin = tuple(self._vmin)
         self._snpinfo = tuple(self._snpinfo)

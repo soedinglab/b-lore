@@ -27,7 +27,7 @@ class DosageParser:
 
     @property
     def nsample(self):
-        self._read_phenotypes()
+        self._run_once()
         return self._nsample
     
     @property
@@ -60,16 +60,6 @@ class DosageParser:
         return tuple(self._full_genotype)
 
     @property
-    def age(self):
-        self._read_covariates()
-        return tuple(self._age)
-
-    @property
-    def sex(self):
-        self._read_covariates()
-        return tuple(self._sex)
-
-    @property
     def locusnames(self):
         self._read_genotypes()
         return tuple(self._locusnames)
@@ -85,6 +75,7 @@ class DosageParser:
            return
         self._read_phenotype_once = True
 
+        phenotype = list()
         with open(self._samplefile, 'r') as samfile:
             header = samfile.readline().strip()
             header_strings = header.split()
@@ -94,10 +85,13 @@ class DosageParser:
                 print ('The specified phenotype %s is not in samplefile' % self._phenotypename)
                 raise
 
-        with open(self._samplefile, 'r') as samfile:
-            phenotype = np.array([line.split()[ipheno] for line in samfile.readlines()[2:]], dtype=int)
+            next(samfile)
+            for mline in samfile:
+                thispheno = mline.split()[ipheno]
+                phenotype.append(float(thispheno) if not thispheno == 'NA' else np.nan)
 
-        self._nsample = len(phenotype)
+        phenotype = np.array(phenotype)
+
         self._phenotype = phenotype
 
 
@@ -108,7 +102,8 @@ class DosageParser:
         for i in range(self._nloci):
             snp_locus = list()
             filepath = self._list_of_genotypefiles[i]
-            locusnames.append(os.path.basename(filepath))
+            locname =  os.path.splitext(os.path.basename(filepath))[0]
+            locusnames.append(locname)
             with open(filepath, 'r') as genfile:
                 for line in genfile:
                     mline = line.split()
@@ -166,27 +161,3 @@ class DosageParser:
             min_ind = het_ind + 1      # Allele BB
             genotype[j,:] = 2 * dosage[min_ind, :] + dosage[het_ind, :] # [AA, AB, BB] := [0, 1, 2]
         return genotype
-
-
-    def _read_covariates(self):
-        if self._read_covariates_once:
-            return
-        self._read_covariates_once = True
-        abspath = os.path.abspath(self._samplefile)
-        #infile = os.path.splitext(abspath)[0] + '.cov'
-        infile = abspath
-        age = [0 for x in range(self.nsample)]
-        sex = [0 for x in range(self.nsample)]
-        i = 0
-        if os.path.exists(infile):
-            with open(infile, 'r') as mfile:
-                next(mfile)
-                next(mfile)
-                for line in mfile:
-                    linesplit = line.split()
-                    sex[i] = int(linesplit[5]) if not linesplit[5] == 'NA' else -1
-                    age[i] = float(linesplit[6]) if not linesplit[6] == 'NA' else -1
-                    i += 1
-        self._age = np.array(age)
-        self._sex = np.array(sex)
-

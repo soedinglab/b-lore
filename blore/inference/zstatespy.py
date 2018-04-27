@@ -72,7 +72,7 @@ def create(nsnps, cmax, target, pi, mu, sig2, vmin, mureg, sigreg2, precll, is_c
                      [[0,1,2], [0,1,3], [1,2,3]]
                  and so on ...
     '''
-
+    #print ("Creating new zstates.")
     if not is_covariate: # Compute the zstates only for SNP loci
 
         # The looping would be done in C++ for speed up
@@ -91,15 +91,24 @@ def create(nsnps, cmax, target, pi, mu, sig2, vmin, mureg, sigreg2, precll, is_c
         zstates = [[]]
         newk = [[i] for i in range(nsnps)]
     
+        #if cmax > 1:
+        #    oldk = zstates # which is now an empty array
+
+        #    # Add the ones which are required
+        #    newprob, oldprob, selk = prune(oldk, newk, target, pi, mu, sig2, vmin, mureg, sigreg2, precll)
+        #    if len(selk) > 0:
+        #        zstates += selk
+        #    oldk = zstates
+
+        #else:
+        #    zstates += newk
+
         if cmax > 1:
             oldk = zstates # which is now an empty array
-
             # Add the ones which are required
             newprob, oldprob, selk = prune(oldk, newk, target, pi, mu, sig2, vmin, mureg, sigreg2, precll)
-            if len(selk) > 0:
-                zstates += selk
+            zstates += newk
             oldk = zstates
-
         else:
             zstates += newk
     
@@ -117,7 +126,6 @@ def create(nsnps, cmax, target, pi, mu, sig2, vmin, mureg, sigreg2, precll, is_c
                 break
             else:
                 leadk = np.array(selk, dtype=np.int32).reshape(nsel * (norm-1))
-    
                 # for first lead create all possible combinations
                 # from next lead onwards do not include duplicate combinations.
                 #    Note that a duplicate (k+1) entry is possible iff 
@@ -130,6 +138,7 @@ def create(nsnps, cmax, target, pi, mu, sig2, vmin, mureg, sigreg2, precll, is_c
                 # get the new zstates from a C++ function
                 maxnewsize = nsel * (nsnps - norm + 1) * norm
                 newz       = np.zeros(maxnewsize, dtype=np.int32)
+                #print ("znorm {:d}. Populating from {:d} leads.".format(norm, len(selk)))
                 newstates  = zcreate(nsel, norm-1, nsnps, leadk, newz)
                 newsize    = newstates * norm
                 result     = np.array(newz[:newsize]).reshape((newstates, norm))
@@ -137,6 +146,7 @@ def create(nsnps, cmax, target, pi, mu, sig2, vmin, mureg, sigreg2, precll, is_c
 
                 # Add the ones required
                 newprob, oldprob, selk = prune(oldk, newk, target, pi, mu, sig2, vmin, mureg, sigreg2, precll)
+                #print ("Probabilities are: {:g} {:g}".format(newprob, oldprob))
                 if len(selk) > 0:
                     zstates += selk
                 oldk = zstates
@@ -144,5 +154,7 @@ def create(nsnps, cmax, target, pi, mu, sig2, vmin, mureg, sigreg2, precll, is_c
     else: # define zstates for covariate locus
 
         zstates = [[i for i in range(nsnps)]]
+
+    #print ("Created {:d} zstates.".format(len(zstates)))
 
     return zstates

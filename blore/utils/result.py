@@ -51,9 +51,13 @@ def create_locus_result(name, iscov, snpinfo, vmin, hess, zstates, zcomps, snp_p
         snpres.append(res)
 
     # Main locus result object
+    if iscov:
+        locusprob = zprob[0]
+    else:
+        locusprob = 1 - zprob[0]
     locusres = ResultObj(locusname = name,
                          iscov = iscov,
-                         causal_prob = 1 - zprob[0],
+                         causal_prob = locusprob,
                          finemap = snpres,
                          zstates = zstateres,
                          hessian = hess)

@@ -85,12 +85,18 @@ def parse_args():
                         metavar='STR',
                         help='name of the phenotype as it appears in sample file')
 
-    parser.add_argument('--statinfo',
+    parser.add_argument('--statdir',
                         nargs='*',
                         type=str,
-                        dest='statfiles',
+                        dest='statdir',
+                        metavar='DIR',
+                        help='list of directories of summary statistics (from different studies) to be used for meta-analysis')
+
+    parser.add_argument('--input',
+                        type=str,
+                        dest='locusnamesfile',
                         metavar='FILE',
-                        help='input file prefixes of summary statistics for different studies to be used for meta-analysis')
+                        help='file containing list of locusnames for metaanalysis')
 
     parser.add_argument('--feature',
                         nargs='*',
@@ -202,7 +208,7 @@ if (opts.summary):
     covnames = opts.covariates
     sigreg = opts.sigreg
     mureg = 0.0
-    tolerance = 0.001
+    tolerance = 0.01
     npca = opts.npca
     regoptim = opts.regoptim
 
@@ -244,12 +250,12 @@ if (opts.meta):
 
     # check that summary statistics files are specified
     try:
-        assert opts.statfiles is not None
+        assert opts.statdir is not None
     except AssertionError:
-        print('Input error: You must specify --statinfo when using with --meta. See --help for details.')
+        print('Input error: You must specify --statdir when using with --meta. See --help for details.')
         raise
 
-    nstudies = len(opts.statfiles)
+    nstudies = len(opts.statdir)
 
     try:
         assert nstudies > 0
@@ -257,9 +263,9 @@ if (opts.meta):
         print('Input error: Please specify the summary statistics file/s')
         raise
 
-    statfiles = opts.statfiles
+    statdir = opts.statdir
     featurefiles = opts.featurefiles
-
+    locusnamesfile = opts.locusnamesfile
 
     if opts.params is not None:
         if opts.params[0] == 0.0:
@@ -279,4 +285,4 @@ if (opts.meta):
         studyname = os.path.split(outdir)[1]
         file_prefix = '%s_meta' % studyname
 
-    meta.optimize_hyperparameters(statfiles, featurefiles, outdir, file_prefix, opts.zmax, opts.muvar, mparams)
+    meta.optimize_hyperparameters(statdir, locusnamesfile, featurefiles, outdir, file_prefix, opts.zmax, opts.muvar, mparams)

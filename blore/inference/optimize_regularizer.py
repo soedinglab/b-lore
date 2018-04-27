@@ -9,7 +9,7 @@ from inference.empirical_bayes import EmpiricalBayes
 class OptimizeRegularizer:
 
 
-    def __init__(self, genotype, phenotype, mu = 0.0, sigma = 0.01, tol = 1, covariates = None):
+    def __init__(self, genotype, phenotype, mu = 0.0, sigma = 0.01, tol = 0.01, covariates = None):
         self._genotype = genotype
         self._phenotype = phenotype
         self._mureg = mu
@@ -80,6 +80,8 @@ class OptimizeRegularizer:
                     # negative value of sigma 0. RESTART!
                     mureg_old = 0
                     sigmareg_old = np.random.normal(0.01, 0.001)
+
+                skip_step = False # set it for the next round
     
                 if checksig and checkmu:
                     iterate = False

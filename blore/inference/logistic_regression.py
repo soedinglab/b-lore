@@ -132,6 +132,31 @@ class LogisticRegression:
         return -loglik, -der
 
 
+    @staticmethod
+    def _log_likelihood_weighted(v, x, p, sigma_reg):
+
+        dim = len(v)
+        wght = (p.shape[0] - np.sum(p)) / np.sum(p) ## no. of controls / no. of cases
+        vx = np.einsum('i,ji->j', v, x)
+        fact = 1 / sigma_reg / sigma_reg
+
+        # Function
+        t1 = vx
+        wt1 = wght * p
+        t2 = np.log(1 + np.exp(vx))
+        wt2 = wght * p + (1 - p) / wght
+        llv = np.sum(np.einsum('i,i->i', wt1, t1) - np.einsum('i,i->i', wt2, t2))
+        reg = 0.5 * dim * np.log(fact) - 0.5 * fact * np.dot(v, v)
+        loglik = llv + reg
+
+        # Gradient
+        pred = 1 / (1 + np.exp(-vx))
+        tder = wt1 - np.einsum('i,i->i', wt2, pred)
+        der = np.einsum('i,ij->j',tder, x) - (v * fact)
+
+        return -loglik, -der
+
+
     def _transform(self, x):
         vx = np.einsum('i,ji->j', self.coeff, x)
         pred = 1 / (1 + np.exp(-vx))
