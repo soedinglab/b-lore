@@ -34,11 +34,12 @@ The `Makefile` uses `g++` by default, which you can change depending on the comp
 
 ## Input files
 For calculating summary statistics, it uses the following file formats as input:
-1. Genotype files in [Oxford format](http://www.stats.ox.ac.uk/~marchini/software/gwas/file_format.html), for all loci of interest.
-2. Sample file in [Oxford format](http://www.stats.ox.ac.uk/~marchini/software/gwas/file_format.html)
+1. Genotype files in [Oxford format](http://www.stats.ox.ac.uk/~marchini/software/gwas/file_format.html), for all loci of interest (e.g. Locus001.gen, Locus002.gen, etc.).
+2. Sample file in [Oxford format](http://www.stats.ox.ac.uk/~marchini/software/gwas/file_format.html) (e.g. study1.sample)
 
 For meta-analysis, it uses the following input:
-1. Output from B-LORE summary statistics. Note that it cannot use standard SNPTEST summary statistics.
+1. Output files B-LORE summary statistics.
+2. List of loci to be analyzed. This is a single file containing 2 columns with no header. The first column lists the name of the loci (e.g. Locus001, Locus002, etc.) and the second column is a binary number (1 or 0) indicating if it is a SNP locus (1) or a covariate locus (0). [Note: The summary statistics at each study outputs this file]
 2. (Optional) Functional genomics data, separately for each locus. 
 Each feature file contains 2 parts: 
 (a) a header line detailing the names of the columns in the file, and
@@ -90,7 +91,8 @@ Perform meta-analysis from summary statistics of multiple studies. Valid options
 
 Option | Description | Priority | Default value
 :---   | :---        |:---      | :--
-&#x2011;&#x2011;statinfo&nbsp;*filename(s)*   | Input file prefix(es) of summary statistics, full path is required | Required | --
+&#x2011;&#x2011;input&nbsp;*filename*   | Input file containing list of loci to be analyzed together | Required | --
+&#x2011;&#x2011;statdir&nbsp;*filename(s)*   | Input file prefix(es) of summary statistics, full path is required | Required | --
 &#x2011;&#x2011;feature&nbsp;*filename(s)*    | Input file(s) for genomic feature tracks | Optional      | --
 &#x2011;&#x2011;params&nbsp;*floats* | Initial values of the hyperparameters, requires 4 space-separated floats corresponding to β<sub>π</sub> μ σ σ<sub>bg</sub>| Optional | 0.01 0.0 0.01 0.01
 &#x2011;&#x2011;muvar | If specified, μ will be optimized, otherwise it will be fixed to the initial value | Optional | --

@@ -30,7 +30,7 @@ class EmpiricalBayes:
         self._sigmareg2 = sigreg2
         self._cmax = cmax
         self._cutoff = zcut
-        self._params = params if params is not None else np.array([-5.5, 0, -5, -5])
+        self._params = params if params is not None else np.array([-5, 0, -5, -5])
         self._rerun  = rerun
         self._regoptim = regoptim
         self._muvar = muvar

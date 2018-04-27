@@ -44,7 +44,8 @@ def parse_args():
             --reg
             --pca
         Options available when using --meta are as follows:
-            --statinfo
+            --input
+            --statdir
             --feature
             --out
             --prefix

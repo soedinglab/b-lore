@@ -220,7 +220,7 @@ class ReadSummary:
                     next(mfile)
                     for mlstr in mfile:
                         mline = mlstr.split()
-                        if int(mline[4] == 1): continue
+                        if int(mline[4]) == 1: continue
                         this_snp = SnpInfo(rsid = mline[0],
                                            bp_location = mline[1],
                                            ref_allele = mline[3],

@@ -35,17 +35,14 @@ def transform(params, features, is_covariate=False, all_causal=False):
             print ("Warning: Pi values equal to one.")
         mu = np.full(features.shape[1], params[k])
         sig2 = np.full(features.shape[1], np.exp(params[k+1]))
-        #sig2 = np.full(features.shape[1], np.square(params[k+1]))
     elif not is_covariate and all_causal:
         pi = np.ones(features.shape[1])
         mu = np.full(features.shape[1], params[k])
         sig2 = np.full(features.shape[1], np.exp(params[k+1]))
-        #sig2 = np.full(features.shape[1], np.square(params[k+1]))
     elif is_covariate:
         beta_sigcov2 = params[-k:]
         nvar = features.shape[1]
         pi = np.ones(nvar)
         mu = np.zeros(nvar)
         sig2 = np.exp(np.dot(beta_sigcov2, features))
-        #sig2 = np.full(features.shape[1], np.square(params[-1]))
     return pi, mu, sig2
