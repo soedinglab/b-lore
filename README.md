@@ -92,10 +92,10 @@ Perform meta-analysis from summary statistics of multiple studies. Valid options
 Option | Description | Priority | Default value
 :---   | :---        |:---      | :--
 &#x2011;&#x2011;input&nbsp;*filename*   | Input file containing list of loci to be analyzed together | Required | --
-&#x2011;&#x2011;statdir&nbsp;*filename(s)*   | Input file prefix(es) of summary statistics, full path is required | Required | --
+&#x2011;&#x2011;statdir&nbsp;*filename(s)*   | Input directory of B-LORE summary statistics | Required | --
 &#x2011;&#x2011;feature&nbsp;*filename(s)*    | Input file(s) for genomic feature tracks | Optional      | --
 &#x2011;&#x2011;params&nbsp;*floats* | Initial values of the hyperparameters, requires 4 space-separated floats corresponding to β<sub>π</sub> μ σ σ<sub>bg</sub>| Optional | 0.01 0.0 0.01 0.01
-&#x2011;&#x2011;muvar | If specified, μ will be optimized, otherwise it will be fixed to the initial value | Optional | --
+&#x2011;&#x2011;muvar | If specified, μ will be optimized, otherwise it will be fixed to the initial value (default 0) | Optional | --
 &#x2011;&#x2011;zmax&nbsp;*int* | Maximum number of causal SNPs allowed | Optional | 2
 &#x2011;&#x2011;out&nbsp;*directory*    | Name of the output directory where result files will be created | Optional | current directory
 &#x2011;&#x2011;prefix&nbsp;*string* | Prefix for the meta-analysis output files | Optional | `_meta`
