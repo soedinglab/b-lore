@@ -188,7 +188,7 @@ compute_zcomps ( int nvar, int zlen, int zmax,
             //gauss_jordan_inversion(dim, amat, logdet, signdet, is_covariate, sig2);
             gauss_jordan_inversion(dim, amat, logdet, signdet);
             if (signdet < 0) {
-                printf ("Error: Precision matrix is not positive semi-definite.");
+                printf ("Error: Precision matrix is not positive semi-definite.\n");
                 exit (EXIT_FAILURE);
             }
             logdet += dim * log(hscale);
