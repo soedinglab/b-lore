@@ -1,4 +1,4 @@
-# B-LORE
+<img src="https://i.imgur.com/Pe9yoUO.png" alt="B-LORE logo" width="250"/>
 
 Bayesian LOgistic REgression
 
