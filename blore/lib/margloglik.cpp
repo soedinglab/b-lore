@@ -40,10 +40,13 @@ gauss_jordan_inversion ( int n, double **matrix, double &logdet, double &signdet
     if (n == 1) {
         a = matrix[0][0];
         matrix[0][1] = 1 / a;
-        logdet = log(abs(a));
         signdet = 1;
         if (a < 0) {
-            signdet *= -1;
+            logdet = log(-a);
+            signdet = -1;
+        } else {
+            logdet = log(a);
+            signdet = 1;
         }
 
     } else {
@@ -183,6 +186,7 @@ compute_zcomps ( int nvar, int zlen, int zmax,
                 for (j = 0; j < dim; ++j) {
                     kj = zarr[zindx + j];
                     amat[i][j] = intlam[ki][kj] / hscale;
+                           
                 }
             }
             //gauss_jordan_inversion(dim, amat, logdet, signdet, is_covariate, sig2);
