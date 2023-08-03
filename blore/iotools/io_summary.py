@@ -239,4 +239,4 @@ class ReadSummary:
         self._vmin = tuple(self._vmin)
         self._snpinfo = tuple(self._snpinfo)
         self._freq = tuple(self._freq)
-        self._precll = np.array(jaclist)
+        self._precll = tuple(jaclist)
