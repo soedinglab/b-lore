@@ -58,12 +58,14 @@ def optimize_hyperparameters(statdirs, locusnamesfile, feature_files, outdir, fi
     #        emp_bayes = EmpiricalBayes(vmin, precll, features, iscov, mureg, sigreg2, cmax, False, params = params, rerun = True)
     #        emp_bayes.fit()
     #params = emp_bayes.params
+    print ("Running Empirical Bayes with z=1 and params =", params)
     znorm = 1
     emp_bayes = EmpiricalBayes(vmin, precll, features, iscov, mureg, sigreg2, 1, muvar, params = params)
     emp_bayes.fit()
     params = emp_bayes.params
     while znorm < cmax:
         znorm += 1
+        print ("Running Empirical Bayes with z={:d} and params =".format(znorm), params)
         emp_bayes = EmpiricalBayes(vmin, precll, features, iscov, mureg, sigreg2, znorm, False, params = params, rerun = True)
         emp_bayes.fit()
         params = emp_bayes.params

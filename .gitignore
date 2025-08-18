@@ -7,3 +7,5 @@ example/output
 example/input
 setup.py
 blore/simulation
+blore/lib/eigen-3.4.0.tar.gz
+blore/lib/eigen-3.4.0

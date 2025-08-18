@@ -1,13 +1,14 @@
 /*
  * =====================================================================================
  *
- *       Filename:  margloglik_dev.c
+ *       Filename:  margloglik.c
  *
  *    Description:  Calculate the log marginal likelihood
  *
  *        Version:  1.0
  *        Created:  25.07.2017 10:35:03
- *       Revision:  none
+ *       Revision:  15.08.2025 | replace gauss_jordan_inversion with Eigen
+ *                  18.08.2025 | replace exit() calls with error codes
  *       Compiler:  gcc
  *
  *         Author:  Saikat Banerjee (banskt), bnrj.saikat@gmail.com
@@ -17,9 +18,38 @@
  */
 
 #define DLLEXPORT extern "C"
+#define ERR_SUCCESS              0
+#define ERR_INVALID_PI           1
+#define ERR_MATRIX_NOT_PSD       2
+#define ERR_DECOMPOSITION_FAILED 3
+
 #include <stdio.h>      /* printf */
 #include <math.h>       /* log, exp */
 #include <stdlib.h>     /* abs */
+#include <iostream>
+#include "Eigen/Dense"
+
+using namespace std;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  print_matrix
+ *  Description:  print a matrix on cout for debugging
+ *                
+ * =====================================================================================
+ */
+
+void print_matrix (double **matrix, int rows, int columns) {
+    for (int i=0; i<rows; ++i){
+        for (int j=0; j<columns; ++j) {
+            cout << matrix[i][j] << ' ';
+        }
+        cout << '\n';
+    }
+    cout << '\n';
+}
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -36,6 +66,10 @@ gauss_jordan_inversion ( int n, double **matrix, double &logdet, double &signdet
     double ratio;
     double a;
 
+    const double eps = 1e-12;  // tolerance for zero pivot
+    int pivot_row;
+    double max_val, tmp, factor, diag;
+
 //  hardcoded for fast calculation of single elements
     if (n == 1) {
         a = matrix[0][0];
@@ -51,7 +85,7 @@ gauss_jordan_inversion ( int n, double **matrix, double &logdet, double &signdet
 
     } else {
 
-//      creating the identity matrix beside the original one
+        // Create the augmented matrix: identity matrix beside the original one
         for(i = 0; i < n; ++i){
             for(j = n; j < 2*n; ++j){
                 if(i==(j-n)) {
@@ -62,31 +96,55 @@ gauss_jordan_inversion ( int n, double **matrix, double &logdet, double &signdet
             }
         }
 
-//      row operations to reduce original matrix to a diagonal matrix
-        for(i = 0; i < n; ++i){
-            for(j = 0; j < n; ++j){
-                if(i != j){
-                    ratio = matrix[j][i]/matrix[i][i];
-                    for(k = 0; k < 2*n; ++k){
-                        matrix[j][k] -= ratio * matrix[i][k];
+        for (i = 0; i < n; ++i) {
+            // Pivoting: find row with largest absolute value in column i
+            pivot_row = i;
+            max_val = fabs(matrix[i][i]);
+            for (j = i + 1; j < n; ++j) {
+                if (fabs(matrix[j][i]) > max_val) {
+                    max_val = fabs(matrix[j][i]);
+                    pivot_row = j;
+                }
+            }
+
+            // Check for numerical stability
+            if (max_val < eps) {
+                signdet = 0;
+                logdet = -INFINITY;
+                printf("Error: Matrix is singular or ill-conditioned (pivot < %.1e).\n", eps);
+                return;
+            }
+
+            // Swap rows if necessary
+            if (pivot_row != i) {
+                signdet *= -1;
+                for (k = 0; k < 2 * n; ++k) {
+                    tmp = matrix[i][k];
+                    matrix[i][k] = matrix[pivot_row][k];
+                    matrix[pivot_row][k] = tmp;
+                }
+            }
+
+            // Elimination: make all rows except pivot zero in column i
+            diag = matrix[i][i];
+            for (j = 0; j < n; ++j) {
+                if (j != i) {
+                    factor = matrix[j][i] / diag;
+                    for (k = 0; k < 2 * n; ++k) {
+                            matrix[j][k] -= factor * matrix[i][k];
                     }
                 }
             }
-        }
 
-//      reducing to unit matrix, determinant is calculated from the diagonal matrix before the reduction
-        logdet = 0.0;
-        signdet = 1;
-        for(i = 0; i < n; ++i){
-            a = matrix[i][i];
-            if (a < 0) {
-                signdet *= -1;
-                logdet += log(-a);
-            } else {
-                logdet += log(a);
+            // Normalize the pivot row
+            for (k = 0; k < 2 * n; ++k) {
+                matrix[i][k] /= diag;
             }
-            for(j = 0; j < 2*n; ++j){
-                matrix[i][j] /= a;
+
+            // Determinant contribution
+            logdet += log(fabs(diag));
+            if (diag < 0) {
+                signdet *= -1;
             }
         }
     }
@@ -101,7 +159,7 @@ gauss_jordan_inversion ( int n, double **matrix, double &logdet, double &signdet
  *                also compute mu*_z and inverse(lam*_z) for every zstate
  * =====================================================================================
  */
-    void
+    int
 compute_zcomps ( int nvar, int zlen, int zmax,
                  int *zarr, int *znorm, 
                  double *pi, double *mu, double *sig2,
@@ -122,7 +180,7 @@ compute_zcomps ( int nvar, int zlen, int zmax,
     
     double precdotv[nvar];
     double intlam[nvar][nvar];
-    double *amat[zmax];
+//    double *amat[zmax];
     double vzinner[zmax];
 
     double hscale;
@@ -138,8 +196,8 @@ compute_zcomps ( int nvar, int zlen, int zmax,
             if (pi[i] < 1.0) {
                 sumlogpi += log(1 - pi[i]);
             } else {
-                printf("Pi value reached 1. Aborting...\n");
-                exit(0);
+                std::cerr << "Pi value reached 1. Aborting...\n";
+                return ERR_INVALID_PI;
             }
         }
     }
@@ -175,35 +233,84 @@ compute_zcomps ( int nvar, int zlen, int zmax,
                     logpz += log (pi[ki] / (1 - pi[ki]));
                 }
             }
+
 //          Select Lambda_z and invert
-//          Note: amat is initiated to hold the original matrix A, plus an identity matrix I of same dimension.
-//          A will be irreversibly changed to I, and I will change to inv(A).
-//          We also get the sign and log of the determinant of A.
             hscale = 1 / sig2[zarr[zindx]];
+            MatrixXd amat(dim, dim);
             for (i = 0; i < dim; ++i) {
                 ki = zarr[zindx + i];
-                amat[i] = new double[2*dim];
                 for (j = 0; j < dim; ++j) {
                     kj = zarr[zindx + j];
-                    amat[i][j] = intlam[ki][kj] / hscale;
-                           
+                    amat(i,j) = intlam[ki][kj] / hscale;
                 }
             }
+
+//          Attempt Cholesky decomposition
+            Eigen::LLT<MatrixXd> llt(amat);
+            MatrixXd amat_inv;
+            logdet = 0.0;
+            signdet = 1.0;
+
+            if (llt.info() == Eigen::Success) {
+                amat_inv = llt.solve(MatrixXd::Identity(dim, dim));
+                double det = amat.determinant();
+                logdet = std::log(std::abs(det));
+                if (det < 0) signdet = -1.0;
+            } else {
+
+//              Fallback to LDLT 
+                Eigen::LDLT<MatrixXd> ldlt(amat);
+                if (ldlt.info() != Eigen::Success) {
+                    if (!ldlt.isPositive()) {
+                        std::cerr << "Error: Precision matrix is not positive semi-definite.\n";
+                        return ERR_MATRIX_NOT_PSD;
+                    } else {
+                        std::cerr << "Error: LDLT decomposition failed (numerical instability).\n";
+                        return ERR_DECOMPOSITION_FAILED;
+                    }
+                } else {
+                    amat_inv = ldlt.solve(MatrixXd::Identity(dim, dim));
+                    double det = amat.determinant();
+                    logdet = std::log(std::abs(det));
+                    if (det < 0) signdet = -1.0;
+                }
+            }
+
+/*
             //gauss_jordan_inversion(dim, amat, logdet, signdet, is_covariate, sig2);
             gauss_jordan_inversion(dim, amat, logdet, signdet);
             if (signdet < 0) {
                 printf ("Error: Precision matrix is not positive semi-definite.\n");
+                printf ("Info: Value of signdet is %f\n", signdet);
+                printf ("Info: Value of logdet is %f\n", logdet);
+                printf ("Info: Value of dim is %d\n", dim);
+                printf ("Info: Value of hscale is %f\n", hscale);
+                printf ("Info: Value of sig2 is %f\n", 1 / hscale);
+                printf ("Info: Value of reg2 is %f\n", reg2);
+                print_matrix (amat, dim, 2*dim);
+                //Debug | get input matrix
+                for (i = 0; i < dim; ++i) {
+                    ki = zarr[zindx + i];
+                    for (j = 0; j<dim; ++j) {
+                        kj = zarr[zindx + j];
+                        amat[i][j] = intlam[ki][kj] / hscale;
+                    }
+                }
+                print_matrix (amat, dim, 2*dim);
                 exit (EXIT_FAILURE);
             }
+*/
             logdet += dim * log(hscale);
             for (i = 0; i < dim; ++i) {
                 for (j = 0; j < dim; ++j) {
-                    intlam_inv_flat[sqindx + (i * dim + j)] = amat[i][j+dim] / hscale;
+                    intlam_inv_flat[sqindx + (i * dim + j)] = amat_inv(i, j) / hscale;
                 }
             }
+            /*
             for (i = 0; i < dim; ++i) {
                 delete [] amat[i];
             }
+            */
 
 //          V_z | Means of the multivariate Gaussian obtained from integration
 //          The inner part is a vector prec.dot.v + mu / sig2 - mureg / reg2
@@ -244,6 +351,7 @@ compute_zcomps ( int nvar, int zlen, int zmax,
 
         } // end if (dim != 0)
     } // end loop over all zstates
+    return ERR_SUCCESS;
 
 }		/* -----  end of function compute_zcomps  ----- */
 
@@ -383,14 +491,15 @@ margloglik_zcomps ( int nvar,                   // number of SNPs
                     double *zcomps,             // output
                     double *grad,               // output
                     bool get_gradient,
-                    bool is_covariate
+                    bool is_covariate,
+                    double *logmL               // output
                   )
 {
     int i, j, k, ki, kj;
     int ai;
+    int retcode;
     double logk, zcompsum;
 
-    double logmL;
     double *intmu;
     double *intlam_inv_flat;
 
@@ -407,7 +516,12 @@ margloglik_zcomps ( int nvar,                   // number of SNPs
     ki = 0;
     kj = 0;
 
-    compute_zcomps(nvar, zlen, zmax, zarr, znorm, pi, mu, sig2, v, precflat, intmu, intlam_inv_flat, zcomps, reg2, mureg, is_covariate);
+    retcode = compute_zcomps(nvar, zlen, zmax, zarr, znorm, pi, mu, sig2, v, precflat, intmu, intlam_inv_flat, zcomps, reg2, mureg, is_covariate);
+
+    if (retcode != ERR_SUCCESS) {
+        *logmL = NAN;
+        return retcode;
+    }
 
     logk = zcomps[0];
     for ( i = 1; i < zlen; i++ ) {
@@ -420,10 +534,10 @@ margloglik_zcomps ( int nvar,                   // number of SNPs
     for (i = 0; i < zlen; i++) {
         zcompsum += exp(zcomps[i] - logk);
     }
-    logmL = log(zcompsum) + logk ;
+    *logmL = log(zcompsum) + logk ;
 
     for ( i = 0; i < zlen; i++ ) {
-        zcomps[i] = exp(zcomps[i] - logmL);
+        zcomps[i] = exp(zcomps[i] - *logmL);
     }
 
     if ( get_gradient ) {
@@ -433,5 +547,5 @@ margloglik_zcomps ( int nvar,                   // number of SNPs
     delete [] intmu;
     delete [] intlam_inv_flat;
 
-    return logmL;
+    return retcode;
 }		/* -----  end of function margloglik_zcomps  ----- */

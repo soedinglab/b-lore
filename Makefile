@@ -1,11 +1,12 @@
 CC := g++
 LIBFLAGS := -O2 -shared -fPIC
 LIBDIR := blore/lib
+CXXFLAGS += -Iblore/lib/Eigen
 
 all: $(LIBDIR)/margloglik.so $(LIBDIR)/zstates.so
 
 $(LIBDIR)/margloglik.so: $(LIBDIR)/margloglik.cpp
-	$(CC) $< $(LIBFLAGS) -o $@
+	$(CC) $(CXXFLAGS) $< $(LIBFLAGS) -o $@
 
 $(LIBDIR)/zstates.so: $(LIBDIR)/zstates_py.cpp
 	$(CC) $< $(LIBFLAGS) -o $@

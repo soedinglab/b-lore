@@ -4,6 +4,20 @@ import numpy as np
 import os
 import ctypes
 
+'''
+Granular error handling of margloglik.so
+'''
+class MarglikError(Exception): pass
+class InvalidPiError(MarglikError): pass
+class MatrixNotPSDError(MarglikError): pass
+class DecompositionError(MarglikError): pass
+
+MARGLIK_ERROR_MAP = {
+    1: InvalidPiError,
+    2: MatrixNotPSDError,
+    3: DecompositionError,
+}
+
 
 def czcompgrad(pi, mu, sig2, z, v, nhyp, feat, mureg, reg2, prec, get_gradient=True, is_covariate=False):
     ''' An efficient C code for calculating marginal log likelihood and its gradient if requested.
@@ -49,17 +63,20 @@ def czcompgrad(pi, mu, sig2, z, v, nhyp, feat, mureg, reg2, prec, get_gradient=T
                        np.ctypeslib.ndpointer(ctypes.c_double, ndim=1, flags='C_CONTIGUOUS, ALIGNED'), # zcomps
                        np.ctypeslib.ndpointer(ctypes.c_double, ndim=1, flags='C_CONTIGUOUS, ALIGNED'), # grad
                        ctypes.c_bool,                                                                  # boolean to get the gradient
-                       ctypes.c_bool                                                                   # boolean for the covariate
+                       ctypes.c_bool,                                                                  # boolean for the covariate
+                       ctypes.POINTER(ctypes.c_double)  # logML (output)
                       ]
 
     zlen = len(z)
     zarr = np.array([item for sublist in z for item in sublist], dtype=np.int32)
     znorm = np.array([len(sublist) for sublist in z], dtype=np.int32)
 
+    logmL = ctypes.c_double()
     zcomps = np.zeros(zlen)
     grad = np.zeros(nhyp)
+    retcode = -1
 
-    logmL = ccomps(v.shape[0],
+    retcode = ccomps(v.shape[0],
                      nhyp,
                      feat.shape[0],
                      zlen,
@@ -77,9 +94,14 @@ def czcompgrad(pi, mu, sig2, z, v, nhyp, feat, mureg, reg2, prec, get_gradient=T
                      zcomps,
                      grad,
                      get_gradient,
-                     is_covariate)
+                     is_covariate,
+                     ctypes.byref(logmL))
 
-    return logmL, zcomps, grad
+    if retcode != 0:
+        exc_class = MARGLIK_ERROR_MAP.get(retcode, MarglikError)
+        raise exc_class(f"C++ error code {retcode}")
+
+    return logmL.value, zcomps, grad
 
 
 def margloglik_zcomps(pi, mu, sig2, z, v, mureg, reg2, prec, is_covariate=False):
