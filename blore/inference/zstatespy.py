@@ -37,8 +37,16 @@ def prune(oldz, newz, target, pi, mu, sig2, vmin, mureg, sigreg2, precll):
         zlen = len(sel)
 
         # For debug
-        #print(probsum)
-        #print(prob[sort][:10] / probsum)
+        # max_idx = max(sel)
+        # if max_idx >= len(newz):
+        #     print("ERROR: Index out of bounds while selecting newz[sel[i]]")
+        #     print("Probsum =", probsum)
+        #     print(prob[sort][:10] / probsum)
+        #     print("len(newz) =", len(newz))
+        #     print("max(sel) =", max_idx)
+        #     print("sel =", sel)
+        #     print("newz[:10] =", newz[:10], "..." if len(newz) > 10 else "")
+        #     raise IndexError("sel contains index >= len(newz)")
 
         # These are our leading states from which terms with znorm (k+1) will be created
         leadk = [newz[sel[i]] for i in range(zlen)]
@@ -117,6 +125,10 @@ def create(nsnps, cmax, target, pi, mu, sig2, vmin, mureg, sigreg2, precll, is_c
         while norm < cmax:
 
             if newprob < (1 - target) * oldprob:
+                break
+
+            if nsnps <= norm:
+                print ("Not enough SNPs. Consider reducing zmax.")
                 break
 
             norm += 1
